@@ -18,6 +18,9 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
     if (W <= 0 || H <= 0) return;
 
     const MARGIN = { top: 20, right: 20, bottom: 40, left: 200 };
+    
+    // Add a main <g> element to contain all visual elements.
+    const gMain = svg.append("g");
 
     // --- Group data by category ---
     const dataByCategory = d3.group(timeline_data, d => d.category);
@@ -46,16 +49,16 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
         .range([MARGIN.top, H - MARGIN.bottom])
         .padding(0.2);
     
-    // --- Axes ---
+    // --- Axes (append to gMain) ---
     const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
     const yAxis = d3.axisLeft(yScale).tickSize(0);
 
-    const xAxisGroup = svg.append("g")
+    const xAxisGroup = gMain.append("g")
         .attr("class", "x-axis")
         .attr("transform", `translate(0, ${H - MARGIN.bottom})`)
         .call(xAxis);
 
-    const yAxisGroup = svg.append("g")
+    const yAxisGroup = gMain.append("g")
         .attr("class", "y-axis")
         .attr("transform", `translate(${MARGIN.left}, 0)`)
         .call(yAxis);
@@ -76,15 +79,16 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
 
     // --- Render Bars ---
     // Add a clipping path so bars don't draw over the Y-axis labels when zoomed.
+    // Defs should be on the main SVG element.
     svg.append("defs").append("clipPath")
         .attr("id", "timeline-clip")
       .append("rect")
         .attr("x", MARGIN.left)
         .attr("y", 0)
-        .attr("width", W - MARGIN.left)
+        .attr("width", W - MARGIN.left - MARGIN.right)
         .attr("height", H);
 
-    const gBars = svg.append("g")
+    const gBars = gMain.append("g")
         .attr("clip-path", "url(#timeline-clip)");
 
     const bars = gBars.selectAll(".timeline-bar")
@@ -127,24 +131,12 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
     bars.append("title")
         .text(d => `${d.name}\nCategory: ${d.category}\nPeriod: ${d.start_year} - ${d.end_year}`);
         
-    // --- Zoom and Pan ---
+    // --- Zoom and Pan (Standard geometric zoom) ---
     const zoom = d3.zoom()
         .scaleExtent([0.5, 20]) 
         .translateExtent([[0, 0], [W, H]]) 
         .on("zoom", (event) => {
-            const transform = event.transform;
-
-            // Update X axis and bars' horizontal properties
-            const newXScale = transform.rescaleX(xScale);
-            xAxisGroup.call(xAxis.scale(newXScale));
-            bars.attr('x', d => newXScale(d.start_year))
-                .attr('width', d => Math.max(2, newXScale(d.end_year) - newXScale(d.start_year)));
-
-            // Update Y axis and bars' vertical properties
-            const newYScale = transform.rescaleY(yScale);
-            yAxisGroup.call(yAxis.scale(newYScale));
-            bars.attr('y', d => newYScale(d.name))
-                .attr('height', newYScale.bandwidth());
+            gMain.attr("transform", event.transform);
         });
 
     svg.call(zoom);

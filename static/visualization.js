@@ -14,6 +14,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const color = d3.scaleOrdinal();
 
+    // --- コンテキストとAPI呼び出しを外部に公開 ---
+    window.getAnalysisContext = () => ({ selectionState, currentData });
+
+    async function callGeminiAPI(prompt, retryCount = 5, delay = 1000) {
+        const apiKey = "AIzaSyCVpxAuAx1e3cxlvy7kj2uxXbV4a_gycVA"; // Provided by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.7,
+                topP: 0.95,
+                maxOutputTokens: 8192,
+            }
+        };
+
+        for (let i = 0; i < retryCount; i++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                }
+            } catch (error) {
+                console.error(`API call attempt ${i + 1} failed:`, error);
+            }
+            if (i < retryCount - 1) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; // Exponential backoff
+            }
+        }
+        return "（エラー：テキストの生成に失敗しました。しばらくしてからもう一度お試しください。）";
+    }
+    window.callGeminiAPI = callGeminiAPI;
+
+
     // --- DOM要素の取得 ---
     const $infoPanel = document.getElementById('info-panel');
     const $selectionPanel = document.getElementById('selection-panel');
@@ -96,11 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     clusteringModelSelect.addEventListener('change', () => {
+        // HDBSCANが選択されている場合のみデンドログラムエリアを表示
         const isHdbscan = clusteringModelSelect.value === 'hdbscan';
-        dendrogramTabButton.style.display = isHdbscan ? '' : 'none';
-        if (!isHdbscan && dendrogramContent.classList.contains('active')) {
-            controlTabButtons[0].click();
-        }
+        const dendrogramWrapper = document.getElementById('dendrogram-content');
+        const hrSeparator = dendrogramWrapper ? dendrogramWrapper.previousElementSibling : null;
+
+        if (dendrogramWrapper) dendrogramWrapper.style.display = isHdbscan ? '' : 'none';
+        if (hrSeparator && hrSeparator.tagName === 'HR') hrSeparator.style.display = isHdbscan ? '' : 'none';
+
         reclusterCallback();
     });
 
@@ -122,25 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Control Panel Tab Switching ---
-    const controlTabButtons = document.querySelectorAll('[data-control-tab-target]');
-    const controlTabContents = document.querySelectorAll('[data-control-tab-content]');
-
-    controlTabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetSelector = button.dataset.controlTabTarget;
-            const target = document.querySelector(targetSelector);
-            
-            controlTabContents.forEach(tabContent => tabContent.classList.remove('active'));
-            controlTabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            target.classList.add('active');
-            
-            if (targetSelector === '#dendrogram-content' && currentData && currentData.dendrogram_data) {
-                renderDendrogram(svgDendrogram, currentData, { selectionState, color }, { reclusterCallback });
-            }
-        });
-    });
+    // --- Control Panelのタブ切り替えロジックはレイアウト変更により不要になったため削除 ---
     
     // --- データ取得と描画 ---
     if(refetchAndAnalyzeButton) refetchAndAnalyzeButton.addEventListener('click', () => requestAnalysisFromServer(true, false));
@@ -199,6 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.error) { throw new Error(response.error); }
             
             currentData = response;
+            // 修正点: document_editor.js から参照できるようにグローバルスコープにデータを格納
+            window.currentVisualizationData = currentData; 
 
             if (!reclusterOnly || forceRefetchPaperData) {
                 calculateCoAuthorStats(currentData.nodes);
@@ -232,15 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Dendrogramの表示/非表示をデータに基づいて更新
             const isHdbscan = clusteringModelSelect.value === 'hdbscan' && currentData.dendrogram_data;
-            dendrogramTabButton.style.display = isHdbscan ? '' : 'none';
-            if (!isHdbscan && dendrogramContent.classList.contains('active')) {
-                controlTabButtons[0].click();
-            }
+            const dendrogramWrapper = document.getElementById('dendrogram-content');
+            const hrSeparator = dendrogramWrapper ? dendrogramWrapper.previousElementSibling : null;
 
+            if (dendrogramWrapper) dendrogramWrapper.style.display = isHdbscan ? '' : 'none';
+            if (hrSeparator && hrSeparator.tagName === 'HR') hrSeparator.style.display = isHdbscan ? '' : 'none';
+            
             rerenderAll();
             
-            if (isHdbscan && dendrogramContent.classList.contains('active')) {
+            if (isHdbscan) {
                 renderDendrogram(svgDendrogram, currentData, { selectionState, color }, { reclusterCallback });
+            } else {
+                svgDendrogram.selectAll("*").remove();
             }
             
             $infoPanel.innerHTML = '分析完了。論文を選択してください。';
@@ -384,12 +415,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 : null;
             const mostFrequentTopicKeywords = mostFrequentTopic ? mostFrequentTopic.Keywords : 'N/A';
     
+            // [修正点 3] 著者ノードにすべての共著論文のアブストラクトと発行年を追加
+            const coauthoredPapersDetails = authorPapers.map(p => ({
+                title: p.title,
+                abstract: p.abstract,
+                year: p.year
+            }));
+
             const payload = { 
                 type: 'author', 
                 name: `著者: ${author}`,
-                stats: {
+                stats: { // 既存の統計データ
                     coauthorCount: coauthorCount,
                     mostFrequentTopic: mostFrequentTopicKeywords
+                },
+                details: { // [修正点 3] 詳細な論文リストを追加
+                    coauthoredPapers: coauthoredPapersDetails
                 }
             };
             $selectionPanel.appendChild(createDraggableTag(`著者: ${author}`, payload));
@@ -402,14 +443,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const topCitedPapers = topicPapers.sort((a, b) => b.cit_cnt - a.cit_cnt).slice(0, 3);
                 const yearDistribution = d3.rollup(topicPapers.filter(p => p.year > 0), v => v.length, d => d.year);
     
+                // [修正点 2] トピックノードに属するすべての論文のアブストラクト、引用数、発行年を追加
+                const allPapersInTopicDetails = topicPapers.map(p => ({
+                    title: p.title,
+                    abstract: p.abstract,
+                    cit_cnt: p.cit_cnt,
+                    year: p.year
+                }));
+
                 const topicName = `トピック: ${topic.Keywords.split(',')[0]}...`;
                 const payload = { 
                     type: 'topic', 
                     name: topicName,
                     details: {
-                        keywords: topic.Keywords,
+                        keywords: topic.Keywords, // 概要キーワード (コンマ区切り)
                         topCitedPapers: topCitedPapers.map(p => ({ title: p.title, year: p.year, cit_cnt: p.cit_cnt })),
-                        yearDistribution: Array.from(yearDistribution.entries()).sort((a,b) => a[0] - b[0])
+                        yearDistribution: Array.from(yearDistribution.entries()).sort((a,b) => a[0] - b[0]),
+                        // 'AllKeywords' は analyzer.py から topic_info に含まれている想定
+                        
+                        // [修正点 2] 追加
+                        allPapersInTopic: allPapersInTopicDetails
                     }
                 };
                 $selectionPanel.appendChild(createDraggableTag(topicName, payload));
@@ -419,7 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
         papers.forEach(paperId => {
             const paper = data.nodes.find(p => p.paper_id === paperId);
             if (paper) {
-                const allKeywords = currentData.keyword_coords ? Object.keys(currentData.keyword_coords) : [];
+                // 修正点: 論文が持つキーワードリストを渡す (analyzer.py が 'keywords' を返している場合)
+                // もし analyzer.py が論文ごとのキーワードを返していない場合、フォールバックが必要
+                const paperKeywords = paper.keywords || (currentData.keyword_coords ? Object.keys(currentData.keyword_coords) : []);
+                
                 const paperName = `論文: ${paper.title}`;
                 const payload = { 
                     type: 'paper', 
@@ -430,7 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         year: paper.year,
                         authors: paper.authors,
                         abstract: paper.abstract,
-                        keywords: allKeywords
+                        keywords: paperKeywords, // 論文固有のキーワード
+                        
+                        // [修正点 1] PDF URL を追加 (data_fetcher.py で追加された想定)
+                        pdf_url: paper.pdf_url || "" 
                     }
                 };
                 $selectionPanel.appendChild(createDraggableTag(`論文: ${paper.title.substring(0, 30)}...`, payload));
@@ -583,19 +642,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = { selectionState, color };
         const callbacks = { onNodeClick, onBackgroundClick, onTopicClick, onAuthorClick, onGroupClick, onInstitutionGroupClick };
 
-        if (activeTabId === 'umap-view') {
-            renderUmapNetwork(svgMain, data, state, callbacks);
-            renderLegend(data);
-        } else {
-            if (umapLegendContainer) umapLegendContainer.style.display = 'none';
-            if (activeTabId === 'temporal-keyword-view') {
+        // --- Tab-specific visibility ---
+        // Explicitly control visibility of elements tied to a specific tab.
+        if (umapLegendContainer) {
+            umapLegendContainer.style.display = (activeTabId === 'umap-view') ? 'block' : 'none';
+        }
+
+        // --- Render content for the active tab ---
+        switch (activeTabId) {
+            case 'umap-view':
+                renderUmapNetwork(svgMain, data, state, callbacks);
+                renderLegend(data);
+                break;
+            case 'temporal-keyword-view':
                 const container = document.getElementById('temporal-keyword-view');
                 renderTemporalKeyword(container, data, state, callbacks);
-            } else if (activeTabId === 'citation-view') {
+                break;
+            case 'citation-view':
                 renderCitationNetwork(svgCitation, data, state, callbacks);
-            } else if (activeTabId === 'coauthor-view') {
+                break;
+            case 'coauthor-view':
                 renderCoauthorTimeline(svgCoauthor, data, state, callbacks);
-            }
+                break;
+            case 'synthesis-view':
+                // This tab doesn't require a JS-based render function.
+                // Having an explicit case prevents any other rendering logic from running.
+                break;
         }
     }
 
@@ -624,6 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.resizeTimer = setTimeout(rerenderAll, 200);
     });
 
-    requestAnalysisFromServer(true);
+    // [修正点] ページ読み込み時の force_refetch を true から false に変更
+    requestAnalysisFromServer(false);
 });
 

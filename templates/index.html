@@ -75,7 +75,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: flex; flex-direction: column; height: 100%; }
         
-        /* --- Control Panel Tab Styles --- */
+        /* --- Control Panel Tab Styles (不再使用) --- */
         .control-tab-button {
             padding: 6px 12px; cursor: pointer; border: none; background-color: transparent;
             border-bottom: 2px solid transparent; font-weight: 500; color: #64748b;
@@ -114,67 +114,57 @@
     ================================================================== -->
     <div id="panel-left" class="panel panel-left">
         <!-- Header -->
-        <div class="vis-header flex-shrink-0">
-            <h1 class="text-2xl font-bold text-indigo-600 mb-2">論文分析ツール</h1>
+        <div class="vis-header flex-shrink-0 flex justify-between items-start space-x-4">
+            <h1 class="text-2xl font-bold text-indigo-600 mb-2 whitespace-nowrap">論文分析ツール</h1>
+
+            <!-- 論文取得設定 (ヘッダー右側に移動, 枠なし) -->
+            <div class="flex-shrink-0 w-3/5 pt-1">
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex flex-col flex-grow">
+                            <label for="aid" class="mb-1 font-medium text-slate-700 text-xs">著者ID (OpenAlex)</label>
+                            <input id="aid" type="text" value="a5022699013" class="w-full border-gray-300 rounded-md shadow-sm text-xs p-1.5">
+                        </div>
+                        <div class="flex flex-col w-28">
+                            <label for="max_papers" class="mb-1 font-medium text-slate-700 text-xs">最大論文数</label>
+                            <input id="max_papers" type="number" value="500" min="50" max="1000" step="50" class="w-full border-gray-300 rounded-md shadow-sm text-xs p-1.5">
+                        </div>
+                        <button id="refetchAndAnalyzeButton" class="self-end bg-indigo-600 text-white font-semibold py-1.5 px-3 rounded-md hover:bg-indigo-700 text-xs">論文を再取得して分析</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content (Controls + Visualization) -->
         <div class="flex-grow flex mt-2 overflow-hidden min-h-0">
-            <!-- Controls -->
+            <!-- Controls (タブを削除し、両方表示) -->
             <div class="vis-controls text-sm w-1/4 pr-4 flex flex-col">
-                <fieldset class="border p-2 rounded-md mb-2 flex-shrink-0">
-                    <legend class="font-semibold px-1">論文取得設定</legend>
-                    <div class="space-y-2">
-                        <div class="flex flex-col">
-                            <label for="aid" class="mb-1 font-medium text-slate-700">著者ID (OpenAlex)</label>
-                            <input id="aid" type="text" value="a5022699013" class="w-full border-gray-300 rounded-md shadow-sm text-xs p-1.5">
-                        </div>
-                        <div class="flex flex-col">
-                            <label for="max_papers" class="mb-1 font-medium text-slate-700">最大論文数</label>
-                            <input id="max_papers" type="number" value="500" min="50" max="1000" step="50" class="w-full border-gray-300 rounded-md shadow-sm text-xs p-1.5">
-                        </div>
-                        <button id="refetchAndAnalyzeButton" class="w-full bg-indigo-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-indigo-700 text-xs mt-2">論文を再取得して分析</button>
-                    </div>
-                </fieldset>
                 
-                <!-- NEW: Control Tabs -->
-                <div class="flex-shrink-0 border-b border-gray-200 text-sm">
-                    <button data-control-tab-target="#analysis-params-content" class="control-tab-button active">分析パラメータ</button>
-                    <button id="dendrogram-tab-button" data-control-tab-target="#dendrogram-content" class="control-tab-button">階層分析</button>
-                </div>
-                <div class="control-tab-content-container flex-grow border-r border-b border-l rounded-b-md bg-white p-2 min-h-0 overflow-y-auto">
-                    <!-- Tab 1: Analysis Parameters (Moved from UMAP view) -->
-                    <div id="analysis-params-content" data-control-tab-content class="control-tab-content active space-y-4">
+                <!-- タブを削除し、両方のコンテンツを単一のコンテナに配置 -->
+                <div class="control-content-container flex-grow bg-white p-2 min-h-0 overflow-y-auto border rounded-md">
+                    
+                    <!-- 1: Analysis Parameters -->
+                    <div id="analysis-params-content" class="space-y-4">
                         <fieldset>
-                             <legend class="font-semibold px-1 text-xs mb-2">BERTopicモデル選択</legend>
                              <div class="space-y-2 text-xs">
                                  <div>
-                                     <label for="embeddingModelSelect" class="font-medium text-slate-700">1. テキスト埋め込み</label>
-                                     <select id="embeddingModelSelect" class="w-full border-gray-300 rounded-md shadow-sm p-1 mt-1">
-                                         <option value="sentencetransformer" selected>SentenceTransformer</option>
-                                         <option value="simcse">SimCSE</option>
-                                         <option value="bert">BERT</option>
-                                     </select>
-                                 </div>
-                                 <div>
-                                     <label for="dimRedModelSelect" class="font-medium text-slate-700">2. 次元削減</label>
-                                     <select id="dimRedModelSelect" class="w-full border-gray-300 rounded-md shadow-sm p-1 mt-1">
-                                         <option value="umap" selected>UMAP</option>
-                                         <option value="pca">PCA</option>
-                                         <option value="tsne">t-SNE</option>
-                                     </select>
-                                 </div>
-                                 <div>
-                                     <label for="clusteringModelSelect" class="font-medium text-slate-700">3. クラスタリング</label>
+                                     <label for="clusteringModelSelect" class="font-medium text-slate-700">クラスタリング</label>
                                      <select id="clusteringModelSelect" class="w-full border-gray-300 rounded-md shadow-sm p-1 mt-1">
                                          <option value="hdbscan" selected>HDBSCAN</option>
                                          <option value="kmeans">K-Means</option>
                                      </select>
+                                     <!-- 削除された要素の代わりに非表示のselectを追加 -->
+                                     <select id="embeddingModelSelect" class="hidden"><option value="simcse"></option></select>
+                                     <select id="dimRedModelSelect" class="hidden"><option value="umap"></option></select>
+                                 </div>
+                                 <!-- K-Means k value input -->
+                                 <div id="kmeans-k-container" class="flex flex-col hidden mt-2">
+                                     <label for="kmeansKInput" class="mb-1 font-medium text-slate-700">K (クラスター数)</label>
+                                     <input id="kmeansKInput" type="number" value="8" min="2" max="50" step="1" class="w-full border-gray-300 rounded-md shadow-sm text-xs p-1.5">
                                  </div>
                              </div>
                         </fieldset>
                         <fieldset class="compact-slider-container pt-2">
-                            <legend class="font-semibold px-1 text-xs mb-2">詳細パラメータ</legend>
                             <div class="space-y-4">
                                 <!-- General parameters -->
                                 <div class="flex flex-col">
@@ -182,9 +172,8 @@
                                     <div id="timeWeightSlider"></div>
                                 </div>
                                 
-                                <!-- Dimensionality Reduction specific parameters -->
+                                <!-- Dimensionality Reduction specific parameters (UMAP only) -->
                                 <div id="dim-red-params-container">
-                                    <!-- UMAP -->
                                     <div id="umap-params" class="space-y-4">
                                         <div class="flex flex-col">
                                             <label class="mb-2 font-medium text-slate-700">n_neighbors (UMAP): <span id="neighborsValue">15</span></label>
@@ -195,24 +184,16 @@
                                             <div id="minDistSlider"></div>
                                         </div>
                                     </div>
-                                    <!-- t-SNE -->
-                                    <div id="tsne-params" class="space-y-4" style="display: none;">
-                                        <div class="flex flex-col">
-                                            <label class="mb-2 font-medium text-slate-700">perplexity (t-SNE): <span id="perplexityValue">30</span></label>
-                                            <div id="perplexitySlider"></div>
-                                        </div>
-                                    </div>
-                                    <!-- PCA -->
-                                    <div id="pca-params" style="display: none;">
-                                        <p class="text-xs text-slate-500 mt-4">PCAには調整可能な主要パラメータはありません。</p>
-                                    </div>
                                 </div>
                             </div>
                         </fieldset>
                         <button id="reanalyzeButton" class="w-full bg-slate-500 text-white font-semibold py-1.5 px-2 rounded-md hover:bg-slate-600 text-xs mt-4">分析を再実行</button>
                     </div>
-                    <!-- Tab 2: Dendrogram (Moved from original location) -->
-                    <div id="dendrogram-content" data-control-tab-content class="control-tab-content">
+                    
+                    <hr class="my-4">
+
+                    <!-- 2: Dendrogram -->
+                    <div id="dendrogram-content">
                         <fieldset>
                             <legend class="font-semibold px-1 flex justify-between w-full items-center">
                                 <span>トピック数 (k)</span><span id="topicCountDisplay" class="font-bold text-indigo-600 text-lg ml-2">0</span>
@@ -225,6 +206,8 @@
                                 <input id="k" type="number" value="8" min="2" max="50" step="1" class="w-16 border-gray-300 rounded-md p-1">
                             </div>
                         </fieldset>
+                        <!-- dendrogram-tab-button は不要になったため非表示（JSが参照するためDOMからは削除しない） -->
+                        <button id="dendrogram-tab-button" style="display: none;"></button>
                     </div>
                 </div>
             </div>
@@ -237,6 +220,7 @@
                     <button data-tab-target="#temporal-keyword-view" class="tab-button">トピック変遷</button>
                     <button data-tab-target="#citation-view" class="tab-button">引用関係図</button>
                     <button data-tab-target="#coauthor-view" class="tab-button">共著/機関</button>
+                    <button data-tab-target="#synthesis-view" class="tab-button">文章生成</button>
                 </div>
 
                 <!-- Tab Content -->
@@ -261,11 +245,17 @@
                             <svg id="citationNet"></svg>
                         </div>
                     </div>
-                    <div id="coauthor-view" data-tab-content class="tab-content flex">
+                    <div id="coauthor-view" data-tab-content class="tab-content">
                         <div class="w-16 flex-shrink-0 flex items-center justify-center p-2">
                         </div>
                         <div id="coauthor-container" class="w-full flex-grow p-2">
                             <svg id="coauthorNet"></svg>
+                        </div>
+                    </div>
+                    <div id="synthesis-view" data-tab-content class="tab-content p-4">
+                        <button id="generate-synthesis-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 self-start mb-4">構成から文章を生成</button>
+                        <div id="synthesis-output" class="prose prose-sm max-w-none w-full h-full overflow-y-auto bg-slate-50 p-4 rounded-md">
+                            <p class="text-slate-500">右の文章構成ツールにブロックを配置し、「構成から文章を生成」ボタンを押してください。</p>
                         </div>
                     </div>
                 </div>
@@ -325,6 +315,7 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Generation Dropdown (削除) -->
                     </div>
                 </div>
                 <div id="canvas" class="flex-grow bg-white rounded-xl p-4 shadow-inner">

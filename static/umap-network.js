@@ -23,8 +23,10 @@ function renderUmapNetwork(svg, data, state, callbacks) {
         gMain.append("text").attr("x", "50%").attr("y", "50%").attr("text-anchor", "middle").text("表示可能な論文がありません。");
         return;
     }
+    console.log(`[DEBUG] ノードの数: ${nodes.length}`)
 
     allPlottableNodes.sort((a, b) => a.year - b.year);
+    console.log(`[DEBUG] 要素の数: ${allPlottableNodes.length}`)
 
     // FIX: Correctly select the container for width/height calculation.
     const container = svg.node().closest("#svg-container");

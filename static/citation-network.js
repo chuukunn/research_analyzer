@@ -50,10 +50,18 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     const years = [...new Set(nodes.map(d => d.year))].sort((a,b) => a - b);
     if (years.length === 0) return;
     
+    // --- 修正点: Y軸の描画範囲（range）を3倍に ---
+    // SVGの高さ(H)に基づいて計算される描画領域の高さを3倍にします。
+    const effectiveHeight = H > MARGIN * 2 ? H - MARGIN * 2 : 1; // 最小高さを1に
+    const rangeHeight = effectiveHeight * 3; // 高さを3倍
+
     const yBand = d3.scaleBand()
         .domain(years)
-        .range([MARGIN, H - MARGIN])
+        // .range([MARGIN, H - MARGIN]) // 修正前
+        .range([MARGIN, MARGIN + rangeHeight]) // 修正後: 3倍の高さを持つrangeを設定
         .paddingInner(0.5);
+    // --- 修正ここまで ---
+
     const yPos = y => yBand(y) + yBand.bandwidth() / 2;
 
     gMain.append("g").selectAll("line").data(years).enter()

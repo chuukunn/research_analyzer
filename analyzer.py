@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 import umap
 import hdbscan
@@ -184,107 +182,169 @@ def analyze_timeline_entities(papers, co_author_data, institution_data):
     
     return groups + institutions + journals
 
-def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data=None, main_author_name=None):
+def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data=None, main_author_name=None, vector_cache=None):
     """
     論文データを分析する。precomputed_dataがあれば一部の処理をスキップする。
+    ★ vector_cache を使用して論文ごとのベクトル化をキャッシュする
     """
+    print("\n[analyzer] Step 1/6: Starting analysis...")
+    
+    # --- 1. 事前分析 (共著者、所属機関、タイムライン) ---
+    print("[analyzer] Step 2/6: Analyzing co-authors and institutions...")
     co_author_data = analyze_co_authorship(papers, main_author_name)
     institution_data = analyze_institution_collaboration(papers)
     timeline_data = analyze_timeline_entities(papers, co_author_data, institution_data)
 
     if not precomputed_data:
         precomputed_data = {}
+    if vector_cache is None:
+        vector_cache = {}
 
-    if 'combined_embeddings' not in precomputed_data:
-        print(f"Embedding papers with {params['embedding_model']}...")
-        docs, pids_with_abs, years = [], [], []
-        for pid, p in papers.items():
-            if (abs_text := (p.get("abstract") or "").strip()) and p.get("year"):
-                docs.append(abs_text)
-                pids_with_abs.append(pid)
-                years.append(p["year"])
+    # --- 2. 次元削減キャッシュの確認 ---
+    print("[analyzer] Step 3/6: Checking dimensionality reduction (UMAP) cache...")
+    if 'reduced_10d' in precomputed_data and 'reduced_2d' in precomputed_data:
+        print("[analyzer] Using cached UMAP results (reduced_10d, reduced_2d). Skipping vectorization and UMAP.")
+        reduced_10d = precomputed_data['reduced_10d']
+        reduced_2d = precomputed_data['reduced_2d']
+        # UMAPがキャッシュされている = combined_embeddings もキャッシュされているはず
+        combined_embeddings = precomputed_data.get('combined_embeddings') 
+        # docs と pids_with_abs も必要
+        docs = precomputed_data.get('docs', [])
+        pids_with_abs = precomputed_data.get('pids_with_abs', [])
+        
+        # 必要なデータが揃っているか最終確認
+        if combined_embeddings is None or not docs or not pids_with_abs:
+             print("[analyzer] Error: UMAP cache was present but other precomputed data (embeddings/docs) was missing. Recomputing...")
+             precomputed_data = {} # キャッシュをリセットして再計算
+        
+    else:
+        print("[analyzer] No valid UMAP cache found.")
+        # --- 3. ベクトル化 (★ 論文ごとキャッシュ利用) ---
+        print("[analyzer] Step 4/6: Embedding (Vectorization)...")
+        
+        if 'combined_embeddings' in precomputed_data:
+            print("[analyzer] Using cached 'combined_embeddings' from precomputed_data.")
+            combined_embeddings = precomputed_data['combined_embeddings']
+            docs = precomputed_data.get('docs', [])
+            pids_with_abs = precomputed_data.get('pids_with_abs', [])
+            if not docs or not pids_with_abs:
+                print("[analyzer] Error: 'combined_embeddings' cache was present but docs/pids missing. Recomputing...")
+                precomputed_data = {} # リセット
+        
+        # 'combined_embeddings' が precomputed_data にない場合、論文ごとキャッシュを使って生成
+        if 'combined_embeddings' not in precomputed_data:
+            print(f"[analyzer] Generating embeddings using global vector_cache (cache size: {len(vector_cache)})...")
+            
+            # 3a. 分析対象の論文リストを作成
+            docs, pids_with_abs, years = [], [], []
+            for pid, p in papers.items():
+                if (abs_text := (p.get("abstract") or "").strip()) and p.get("year"):
+                    docs.append(abs_text)
+                    pids_with_abs.append(pid)
+                    years.append(p["year"])
+                else:
+                    p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
+            
+            if not docs or len(docs) < params.get('n_neighbors', 15):
+                print("[analyzer] Not enough documents for analysis. Skipping.")
+                return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "institution_data": institution_data, "timeline_data": timeline_data}
+            
+            print(f"[analyzer] Found {len(docs)} documents with abstract and year for analysis.")
+            
+            # 3b. 論文ごとキャッシュを確認し、ベクトル化が必要なリストを作成
+            content_vectors_map = {}
+            docs_to_encode_indices = []
+            docs_to_encode_texts = []
+
+            for i, pid in enumerate(pids_with_abs):
+                if pid in vector_cache:
+                    content_vectors_map[pid] = vector_cache[pid]
+                else:
+                    docs_to_encode_indices.append(i)
+                    docs_to_encode_texts.append(docs[i])
+            
+            print(f"[analyzer] Found {len(content_vectors_map)} vectors in vector_cache.")
+            
+            # 3c. 新規論文のベクトル化
+            if docs_to_encode_texts:
+                print(f"[analyzer] Running SentenceTransformer.encode() for {len(docs_to_encode_texts)} new documents...")
+                new_vectors = embedding_model.encode(docs_to_encode_texts, show_progress_bar=True)
+                
+                # 3d. 新規ベクトルをキャッシュに保存し、マップに追加
+                for i, new_vector in enumerate(new_vectors):
+                    original_index = docs_to_encode_indices[i]
+                    pid = pids_with_abs[original_index]
+                    vector_cache[pid] = new_vector # ★ グローバルキャッシュを更新
+                    content_vectors_map[pid] = new_vector
+                print(f"[analyzer] Encoding complete. Updated vector_cache size: {len(vector_cache)}")
+            
+            # 3e. 論文ベクトルを正しい順序でNumpy配列に再構築
+            content_embeddings_list = [content_vectors_map[pid] for pid in pids_with_abs]
+            content_embeddings = np.array(content_embeddings_list)
+            
+            # 3f. 時間重み付け
+            if params.get('time_weight', 0) > 0:
+                print(f"[analyzer] Applying time_weight: {params['time_weight']}")
+                year_scaler = MinMaxScaler()
+                time_vector = year_scaler.fit_transform(np.array(years).reshape(-1, 1))
+                weighted_time_vector = time_vector * params['time_weight']
+                combined_embeddings = np.hstack([content_embeddings, weighted_time_vector])
             else:
-                p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
+                combined_embeddings = content_embeddings
+            
+            # 3g. precomputed_data に保存
+            precomputed_data['docs'] = docs
+            precomputed_data['pids_with_abs'] = pids_with_abs
+            precomputed_data['combined_embeddings'] = combined_embeddings
 
-        if not docs or len(docs) < params.get('n_neighbors', 15):
-            print("分析に必要な論文数が不足しています。")
-            return {
-                "papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, 
-                "top_overall_keywords": [], "precomputed_data": {},
-                "co_author_data": co_author_data,
-                "institution_data": institution_data,
-                "timeline_data": timeline_data
-            }
+        # --- 4. 次元削減 (UMAP) ---
+        print(f"[analyzer] Step 5/6: Reducing dimensions with UMAP (n_neighbors={params['n_neighbors']}, min_dist={params['min_dist']})...")
         
-        precomputed_data['docs'] = docs
-        precomputed_data['pids_with_abs'] = pids_with_abs
-
-        print("論文のベクトル化を実行中...")
-        content_embeddings = embedding_model.encode(docs, show_progress_bar=False)
-        
-        if params.get('time_weight', 0) > 0:
-            year_scaler = MinMaxScaler()
-            time_vector = year_scaler.fit_transform(np.array(years).reshape(-1, 1))
-            weighted_time_vector = time_vector * params['time_weight']
-            combined_embeddings = np.hstack([content_embeddings, weighted_time_vector])
-        else:
-            combined_embeddings = content_embeddings
-        precomputed_data['combined_embeddings'] = combined_embeddings
-    
-    combined_embeddings = precomputed_data['combined_embeddings']
-    docs = precomputed_data['docs']
-    pids_with_abs = precomputed_data['pids_with_abs']
-    
-    # --- 2. 次元削減 ---
-    print(f"Reducing dimensions with {params['dim_red_model']}...")
-    reducer_model = params['dim_red_model'].lower()
-    
-    # クラスタリング用の高次元埋め込み(10D or 3D for t-SNE)
-    if reducer_model == 'umap':
+        # クラスタリング用の高次元埋め込み(10D) - パラメータ固定
         umap_cluster_model = umap.UMAP(n_neighbors=15, n_components=10, min_dist=0.1, random_state=42)
         reduced_10d = umap_cluster_model.fit_transform(combined_embeddings)
-    elif reducer_model == 'pca':
-        pca_model = PCA(n_components=10, random_state=42)
-        reduced_10d = pca_model.fit_transform(combined_embeddings)
-    elif reducer_model == 'tsne':
-        # Barnes-Hut t-SNE, the default for large N, requires n_components <= 3.
-        # We use 3 components as input for the subsequent clustering step.
-        tsne_model = TSNE(n_components=3, random_state=42, perplexity=min(30, len(combined_embeddings)-1))
-        reduced_10d = tsne_model.fit_transform(combined_embeddings)
-    else: # デフォルトはUMAP
-        umap_cluster_model = umap.UMAP(n_neighbors=15, n_components=10, min_dist=0.1, random_state=42)
-        reduced_10d = umap_cluster_model.fit_transform(combined_embeddings)
-        
-    # 可視化用の2D埋め込み
-    if reducer_model == 'umap':
-        umap_viz_model = umap.UMAP(n_neighbors=params['n_neighbors'], n_components=2, min_dist=params['min_dist'], random_state=42)
-        reduced_2d = umap_viz_model.fit_transform(combined_embeddings)
-    elif reducer_model == 'pca':
-        pca_model_2d = PCA(n_components=2, random_state=42)
-        reduced_2d = pca_model_2d.fit_transform(combined_embeddings)
-    elif reducer_model == 'tsne':
-        tsne_model_2d = TSNE(n_components=2, random_state=42, perplexity=min(30, len(combined_embeddings)-1))
-        reduced_2d = tsne_model_2d.fit_transform(combined_embeddings)
-    else: # デフォルトはUMAP
+            
+        # 可視化用の2D埋め込み - パラメータ可変
         umap_viz_model = umap.UMAP(n_neighbors=params['n_neighbors'], n_components=2, min_dist=params['min_dist'], random_state=42)
         reduced_2d = umap_viz_model.fit_transform(combined_embeddings)
 
-    # --- 3. クラスタリング ---
-    print(f"Clustering with {params['clustering_model']}...")
+        # 4a. precomputed_data に保存
+        precomputed_data['reduced_10d'] = reduced_10d
+        precomputed_data['reduced_2d'] = reduced_2d
+
+    # --- 5. クラスタリング ---
+    print(f"[analyzer] Step 6/6: Clustering with {params['clustering_model']} (k={params['k']})...")
     clusterer_model = params['clustering_model'].lower()
     dendrogram_tree = None
-    
+
+    # HDBSCANのmin_cluster_sizeを固定値に設定。これによりkを変更してもデンドログラムの構造が安定する。
+    HDBSCAN_MIN_CLUSTER_SIZE = 5
+
     if clusterer_model == 'hdbscan':
-        hdbscan_clusterer = hdbscan.HDBSCAN(min_cluster_size=params['k'], min_samples=1, gen_min_span_tree=True)
-        hdbscan_clusterer.fit(reduced_10d)
-        try:
-            flat_clusterer = HDBSCAN_flat(reduced_10d, n_clusters=params['k'], min_cluster_size=2)
-            topics = flat_clusterer.labels_
-        except Exception:
-            topics = hdbscan_clusterer.labels_
+        # デンドログラム生成用に、固定パラメータでHDBSCANを一度実行する
+        hdbscan_clusterer_for_dendrogram = hdbscan.HDBSCAN(
+            min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE, 
+            min_samples=1, 
+            gen_min_span_tree=True
+        )
+        hdbscan_clusterer_for_dendrogram.fit(reduced_10d)
         
-        # デンドログラムデータ生成
-        linkage_matrix = hdbscan_clusterer.single_linkage_tree_.to_numpy()
+        try:
+            # ユーザー指定のクラスタ数 'k' でフラットなクラスタリングを実行する
+            flat_clusterer = HDBSCAN_flat(
+                reduced_10d, 
+                n_clusters=params['k'], 
+                min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE
+            )
+            topics = flat_clusterer.labels_
+        except Exception as e:
+            print(f"[analyzer] HDBSCAN_flat clustering failed with k={params['k']}. Error: {e}")
+            print(f"[analyzer] Falling back to default HDBSCAN clustering result.")
+            # flat clustering が失敗した場合は、デンドログラム生成に使ったインスタンスの結果をフォールバックとして使用
+            topics = hdbscan_clusterer_for_dendrogram.labels_
+        
+        # デンドログラムデータは、固定パラメータで実行したインスタンスから生成
+        linkage_matrix = hdbscan_clusterer_for_dendrogram.single_linkage_tree_.to_numpy()
         def build_tree(node, linkage, n_samples):
             if node.is_leaf(): return {"name": f"doc_{node.id}", "size": 1}
             distance = linkage[node.id - n_samples][2] if (node.id - n_samples) < len(linkage) else 0
@@ -294,16 +354,25 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         dendrogram_tree = build_tree(root_node[0], linkage_matrix, n_samples) if root_node else None
 
     elif clusterer_model == 'kmeans':
+        # params['k'] には、UIから指定されたk-means用のkの値が入っている
         kmeans_clusterer = KMeans(n_clusters=params['k'], random_state=42, n_init=10)
         topics = kmeans_clusterer.fit_predict(reduced_10d)
         # K-Meansは階層的ではないため、デンドログラムは生成しない
         dendrogram_tree = None
-    else: # デフォルトはHDBSCAN
-        hdbscan_clusterer = hdbscan.HDBSCAN(min_cluster_size=params['k'], min_samples=1, gen_min_span_tree=True)
+    else: # デフォルトはHDBSCAN（UIからの選択肢外）
+        hdbscan_clusterer = hdbscan.HDBSCAN(min_cluster_size=params['k'], min_samples=1, gen_min_span_tree=False)
         topics = hdbscan_clusterer.fit_predict(reduced_10d)
-        dendrogram_tree = None # Not implemented for default case
+        dendrogram_tree = None
 
-    print("トピックキーワードと全体キーワードを生成中...")
+    # トピックが-1（未分類）の論文を新しいトピック番号に割り当てる
+    if -1 in topics:
+        max_topic_num = np.max(topics)
+        # -1しかない場合(max_topic_numが-1)は新しいトピックを0とする
+        new_topic_num = max_topic_num + 1 if max_topic_num > -1 else 0
+        topics[topics == -1] = new_topic_num
+        print(f"[analyzer] Unclassified documents (-1) assigned to new topic {new_topic_num}.")
+
+    print("[analyzer] Generating topic keywords and top overall keywords...")
     documents = pd.DataFrame({"doc": docs, "topic": topics})
     
     try:
@@ -326,7 +395,6 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         topic_keywords, all_topic_keywords = {}, {}
         for i, row in docs_per_topic.iterrows():
             topic_num = row['topic']
-            if topic_num == -1: continue
             topic_tfidf_scores = topic_tfidf[i].toarray().flatten()
             relevant_word_indices = topic_tfidf_scores.argsort()[::-1]
             keywords_with_scores = [{"word": topic_words[j], "score": topic_tfidf_scores[j]} for j in relevant_word_indices[:50] if topic_tfidf_scores[j] > 0.01]
@@ -349,6 +417,7 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             "embedding_2d": reduced_2d[i].tolist()
         })
     
+    print("[analyzer] Analysis complete. Returning data.")
     return {
         "papers": papers, "topic_info": topic_info, "dendrogram_data": dendrogram_tree,
         "top_overall_keywords": top_overall_keywords, "precomputed_data": precomputed_data,
@@ -356,3 +425,4 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         "institution_data": institution_data,
         "timeline_data": timeline_data
     }
+
