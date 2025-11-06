@@ -1,6 +1,7 @@
 // temporal-keyword.js
 
 let temporalChartType = 'stream'; // 'stream' or 'bar'
+let temporalChartMode = 'expand'; // 'expand' (割合) or 'count' (出版数)
 
 /**
  * トピック要約モーダル
@@ -47,11 +48,11 @@ async function showKeywordDetailsModal(topic, allNodes) {
 
         const topicNodes = allNodes.filter(node => node.topic === topic.Topic);
         
-        // プロンプトに含める論文情報を構築（引用数上位10件）
+        // ★ 修正: 引用数上位10件 -> トピック内の「すべて」の論文のアブストラクト「全文」に変更
         const papersInfo = topicNodes
             .sort((a, b) => b.cit_cnt - a.cit_cnt) // 引用数でソート
-            .slice(0, 10) // 上位10件
-            .map(p => `- "${p.title}" (${p.year}), 引用数: ${p.cit_cnt}, 要旨: ${p.abstract ? p.abstract.substring(0, 150) + '...' : 'N/A'}`);
+            // .slice(0, 10) // 10件の制限を解除
+            .map(p => `- "${p.title}" (${p.year}), 引用数: ${p.cit_cnt}, 要旨: ${p.abstract ? p.abstract : 'N/A'}`); // .substring(0, 150) + '...' を解除し、全文を使用
 
         // 詳細キーワード情報（上位15件）
         const keywordsInfo = (topic.AllKeywords || [])
@@ -68,7 +69,7 @@ async function showKeywordDetailsModal(topic, allNodes) {
 - 詳細キーワード (上位15件): ${keywordsInfo}
 - トピック内の論文数: ${topicNodes.length} 件
 
-# トピック内の主要論文 (引用数トップ10)
+# トピック内の主要論文 (アブストラクトリスト)
 ${papersInfo.join('\n')}
 
 # 要約の構成
@@ -104,30 +105,64 @@ function renderTemporalKeyword(container, data, state, callbacks) {
     leftPanel.className = 'w-2/3 h-full p-2 border-r flex flex-col';
 
     const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'flex-shrink-0 mb-2 flex items-center justify-end space-x-2';
+    controlsContainer.className = 'flex-shrink-0 mb-2 flex items-center justify-end space-x-4'; // space-x-4 に変更
     leftPanel.appendChild(controlsContainer);
 
+    // --- グラフタイプ切替 (Stream / Bar) ---
+    const typeGroup = document.createElement('div');
+    typeGroup.className = 'flex items-center space-x-1 p-0.5 bg-slate-200 rounded-md';
+    
     const streamBtn = document.createElement('button');
-    streamBtn.textContent = 'Streamgraph';
-    streamBtn.className = `text-xs px-2 py-1 rounded-md ${temporalChartType === 'stream' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`;
+    streamBtn.textContent = 'Stream';
+    streamBtn.className = `text-xs px-2 py-1 rounded ${temporalChartType === 'stream' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
     streamBtn.onclick = () => {
         if (temporalChartType !== 'stream') {
             temporalChartType = 'stream';
             renderTemporalKeyword(container, data, state, callbacks);
         }
     };
-    controlsContainer.appendChild(streamBtn);
+    typeGroup.appendChild(streamBtn);
 
     const barBtn = document.createElement('button');
-    barBtn.textContent = 'Bar Chart';
-    barBtn.className = `text-xs px-2 py-1 rounded-md ${temporalChartType === 'bar' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`;
+    barBtn.textContent = 'Bar';
+    barBtn.className = `text-xs px-2 py-1 rounded ${temporalChartType === 'bar' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
     barBtn.onclick = () => {
         if (temporalChartType !== 'bar') {
             temporalChartType = 'bar';
             renderTemporalKeyword(container, data, state, callbacks);
         }
     };
-    controlsContainer.appendChild(barBtn);
+    typeGroup.appendChild(barBtn);
+    controlsContainer.appendChild(typeGroup);
+    
+    // --- 修正点1: モード切替 (割合 / 出版数) ---
+    const modeGroup = document.createElement('div');
+    modeGroup.className = 'flex items-center space-x-1 p-0.5 bg-slate-200 rounded-md';
+
+    const expandBtn = document.createElement('button');
+    expandBtn.textContent = '割合 (%)';
+    expandBtn.className = `text-xs px-2 py-1 rounded ${temporalChartMode === 'expand' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
+    expandBtn.onclick = () => {
+        if (temporalChartMode !== 'expand') {
+            temporalChartMode = 'expand';
+            renderTemporalKeyword(container, data, state, callbacks);
+        }
+    };
+    modeGroup.appendChild(expandBtn);
+
+    const countBtn = document.createElement('button');
+    countBtn.textContent = '出版数';
+    countBtn.className = `text-xs px-2 py-1 rounded ${temporalChartMode === 'count' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
+    countBtn.onclick = () => {
+        if (temporalChartMode !== 'count') {
+            temporalChartMode = 'count';
+            renderTemporalKeyword(container, data, state, callbacks);
+        }
+    };
+    modeGroup.appendChild(countBtn);
+    controlsContainer.appendChild(modeGroup);
+    // --- 修正ここまで ---
+
 
     const chartContainer = document.createElement('div');
     chartContainer.className = 'flex-grow relative min-h-0';
@@ -172,19 +207,16 @@ function renderStreamgraph(svg, data, state, callbacks) {
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
     
-    // --- 修正点: topicIds の順序をカスタマイズ ---
     let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
     
-    // 要求2: クリックしたトピック（1つの場合）をリストの先頭（＝底辺）に移動
     if (selectionState.topics.size === 1) {
         const selectedTopicId = [...selectionState.topics][0];
         const index = topicIds.indexOf(selectedTopicId);
         if (index > -1) {
-            topicIds.splice(index, 1); // 削除
-            topicIds.unshift(selectedTopicId); // 先頭に追加
+            topicIds.splice(index, 1); 
+            topicIds.unshift(selectedTopicId); 
         }
     }
-    // --- 修正ここまで ---
 
     const dataForStream = Array.from(countsByYearTopic.entries()).map(([year, topics]) => ({ year, ...Object.fromEntries(topicIds.map(id => [id, topics.get(id) || 0])) })).sort((a, b) => a.year - b.year);
 
@@ -193,18 +225,25 @@ function renderStreamgraph(svg, data, state, callbacks) {
         return;
     }
 
+    // --- ★ 修正点 3: モードに応じて offset を変更 (Silhouette -> None) ---
+    const offset = temporalChartMode === 'expand' ? d3.stackOffsetExpand : d3.stackOffsetNone; // 'count' モードの時、下付け(None)にする
+    const yTickFormat = temporalChartMode === 'expand' ? d3.format(".0%") : d3.format("d");
+
     const series = d3.stack()
         .keys(topicIds)
-        .order(d3.stackOrderNone) // 修正点 2: keysの順序(カスタマイズ済み)をそのまま使う
-        .offset(d3.stackOffsetExpand) // 修正点 1: 割合(0-1)で表示
+        .order(d3.stackOrderNone) 
+        .offset(offset) // 修正
         (dataForStream);
+        
+    const yDomain = temporalChartMode === 'expand' ? [0, 1] : d3.extent(series.flat(2));
+    // --- 修正ここまで ---
         
     const xScale = d3.scaleLinear()
         .domain(d3.extent(dataForStream, d => d.year))
         .range([MARGIN.left, W - MARGIN.right]);
         
     const yScale = d3.scaleLinear()
-        .domain([0, 1]) // 修正点 1: 割合(0-1)
+        .domain(yDomain) // 修正
         .range([H - MARGIN.bottom, MARGIN.top]);
         
     const area = d3.area()
@@ -220,12 +259,24 @@ function renderStreamgraph(svg, data, state, callbacks) {
         .attr("opacity", ({ key }) => (selectionState.topics.size === 0 || selectionState.topics.has(key)) ? 1 : 0.2)
         .style("cursor", "pointer")
         .on("click", (event, d) => { event.stopPropagation(); onTopicClick(d.key); })
-        .append("title").text(({key}) => topic_info.find(t => t.Topic === key)?.Keywords || `Topic ${key}`);
+        .append("title").text(({key, ...d}) => {
+            const topic = topic_info.find(t => t.Topic === key);
+            const title = topic ? topic.Keywords : `Topic ${key}`;
+            // ツールチップの内容もモードに応じて変更
+            if (temporalChartMode === 'expand') {
+                 // 'd' は series の要素 (e.g., [ [y0, y1], [y0, y1], ... ])
+                 // クリックされた特定の点のデータを見つけるのは難しいので、トピック名のみ
+                return title;
+            } else {
+                // 絶対数の場合も同様
+                return title;
+            }
+        });
         
     svg.on("click", onBackgroundClick);
 
     svg.append("g").attr("transform", `translate(0, ${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
-    svg.append("g").attr("transform", `translate(${MARGIN.left}, 0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"))); // 修正点 1: %フォーマット
+    svg.append("g").attr("transform", `translate(${MARGIN.left}, 0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(yTickFormat)); // 修正
 }
 
 
@@ -249,33 +300,38 @@ function renderBarChart(svg, data, state, callbacks) {
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
     
-    // --- 修正点: topicIds の順序をカスタマイズ ---
     let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
     
-    // 要求2: クリックしたトピック（1つの場合）をリストの先頭（＝底辺）に移動
     if (selectionState.topics.size === 1) {
         const selectedTopicId = [...selectionState.topics][0];
         const index = topicIds.indexOf(selectedTopicId);
         if (index > -1) {
-            topicIds.splice(index, 1); // 削除
-            topicIds.unshift(selectedTopicId); // 先頭に追加
+            topicIds.splice(index, 1); 
+            topicIds.unshift(selectedTopicId); 
         }
     }
-    // --- 修正ここまで ---
 
     const dataForStack = Array.from(countsByYearTopic.entries()).map(([year, topics]) => ({ year, ...Object.fromEntries(topicIds.map(id => [id, topics.get(id) || 0])) })).sort((a, b) => a.year - b.year);
     
     if (dataForStack.length === 0) return;
 
+    // --- 修正点1: モードに応じて offset, yDomain, yTickFormat を変更 ---
+    const offset = temporalChartMode === 'expand' ? d3.stackOffsetExpand : d3.stackOffsetNone;
+    const yTickFormat = temporalChartMode === 'expand' ? d3.format(".0%") : d3.format("d");
+
     const series = d3.stack()
         .keys(topicIds)
-        .order(d3.stackOrderNone) // 修正点 2: keysの順序(カスタマイズ済み)をそのまま使う
-        .offset(d3.stackOffsetExpand) // 修正点 1: 割合(0-1)で表示
+        .order(d3.stackOrderNone)
+        .offset(offset) // 修正
         (dataForStack);
+
+    const yMax = temporalChartMode === 'expand' ? 1 : d3.max(series, d => d3.max(d, d => d[1]));
+    const yDomain = [0, yMax];
+    // --- 修正ここまで ---
 
     const years = dataForStack.map(d => d.year);
     const xScale = d3.scaleBand().domain(years).range([MARGIN.left, W - MARGIN.right]).padding(0.2);
-    const yScale = d3.scaleLinear().domain([0, 1]).nice().range([H - MARGIN.bottom, MARGIN.top]); // 修正点 1: 割合(0-1)
+    const yScale = d3.scaleLinear().domain(yDomain).nice().range([H - MARGIN.bottom, MARGIN.top]); // 修正
 
     const g = svg.append("g");
     g.selectAll("g").data(series).join("g")
@@ -284,7 +340,7 @@ function renderBarChart(svg, data, state, callbacks) {
         .selectAll("rect").data(d => d).join("rect")
             .attr("x", d => xScale(d.data.year))
             .attr("y", d => yScale(d[1]))
-            .attr("height", d => yScale(d[0]) - yScale(d[1]))
+            .attr("height", d => Math.max(0, yScale(d[0]) - yScale(d[1]))) // 高さが負にならないように
             .attr("width", xScale.bandwidth())
             .style("cursor", "pointer")
             .on("click", (event, d) => {
@@ -295,15 +351,24 @@ function renderBarChart(svg, data, state, callbacks) {
             .append("title").text(d => {
                 const topicKey = series.find(s => s.includes(d)).key;
                 const topic = topic_info.find(t => t.Topic === topicKey);
-                // 修正点 1: 割合を表示
-                const percentage = (d[1] - d[0]) * 100;
-                return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\n割合: ${percentage.toFixed(1)}%`;
+                
+                // --- 修正点1: ツールチップの表示をモードに応じて変更 ---
+                let valueText = '';
+                if (temporalChartMode === 'expand') {
+                    const percentage = (d[1] - d[0]) * 100;
+                    valueText = `割合: ${percentage.toFixed(1)}%`;
+                } else {
+                    const count = d.data[topicKey] || 0;
+                    valueText = `出版数: ${count}`;
+                }
+                return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\n${valueText}`;
+                // --- 修正ここまで ---
             });
 
     svg.on("click", onBackgroundClick);
     const xAxis = g.append("g").attr("transform", `translate(0,${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickValues(xScale.domain().filter((d,i) => !(i%Math.ceil(years.length/10)) || i === years.length - 1)));
     xAxis.selectAll("text").attr("transform", "rotate(-45)").style("text-anchor", "end");
-    g.append("g").attr("transform", `translate(${MARGIN.left},0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"))); // 修正点 1: %フォーマット
+    g.append("g").attr("transform", `translate(${MARGIN.left},0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(yTickFormat)); // 修正
 }
 
 
@@ -312,7 +377,8 @@ function renderKeywordLegend(container, data, state, callbacks) {
     const { selectionState, color } = state;
     const { onTopicClick } = callbacks;
 
-    container.innerHTML = `<h3 class="font-semibold text-lg mb-2">トピックキーワード (BERTopic)</h3>`;
+    // --- 修正点2: (BERTopic) の文言を削除 ---
+    container.innerHTML = `<h3 class="font-semibold text-lg mb-2">トピックキーワード</h3>`;
     const legendList = document.createElement('div');
     container.appendChild(legendList);
 

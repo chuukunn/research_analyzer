@@ -219,7 +219,8 @@
                     <button data-tab-target="#umap-view" class="tab-button active">論文埋め込み</button>
                     <button data-tab-target="#temporal-keyword-view" class="tab-button">トピック変遷</button>
                     <button data-tab-target="#citation-view" class="tab-button">引用関係図</button>
-                    <button data-tab-target="#coauthor-view" class="tab-button">共著タイムライン</button>
+                    <!-- ★ 修正点 1: 「共著タイムライン」を「共著ネットワーク」に変更 -->
+                    <button data-tab-target="#coauthor-view" class="tab-button">共著ネットワーク</button>
                     <button data-tab-target="#synthesis-view" class="tab-button">文章生成</button>
                 </div>
 
@@ -246,8 +247,10 @@
                         </div>
                     </div>
                     <div id="coauthor-view" data-tab-content class="tab-content">
-                        <div id="coauthor-container" class="w-full flex-grow p-2">
-                            <svg id="coauthorNet"></svg>
+                        <!-- ★ 修正点 1: ID名を coauthor-container に変更 (coauthor-network.js の実装に合わせる) -->
+                        <div id="coauthor-container" class="w-full flex-grow">
+                            <!-- coauthor-network.js がこの要素の *中身* を構築する -->
+                            <!-- <svg id="coauthorNet"></svg> を削除 (JSがSVGを動的に生成/管理するため) -->
                         </div>
                     </div>
                     <div id="synthesis-view" data-tab-content class="tab-content p-4">
@@ -374,4 +377,3 @@
 
 </body>
 </html>
-
