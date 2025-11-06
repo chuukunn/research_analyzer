@@ -219,7 +219,7 @@
                     <button data-tab-target="#umap-view" class="tab-button active">論文埋め込み</button>
                     <button data-tab-target="#temporal-keyword-view" class="tab-button">トピック変遷</button>
                     <button data-tab-target="#citation-view" class="tab-button">引用関係図</button>
-                    <button data-tab-target="#coauthor-view" class="tab-button">共著/機関</button>
+                    <button data-tab-target="#coauthor-view" class="tab-button">共著タイムライン</button>
                     <button data-tab-target="#synthesis-view" class="tab-button">文章生成</button>
                 </div>
 
@@ -246,8 +246,6 @@
                         </div>
                     </div>
                     <div id="coauthor-view" data-tab-content class="tab-content">
-                        <div class="w-16 flex-shrink-0 flex items-center justify-center p-2">
-                        </div>
                         <div id="coauthor-container" class="w-full flex-grow p-2">
                             <svg id="coauthorNet"></svg>
                         </div>
@@ -315,9 +313,28 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Generation Dropdown (削除) -->
                     </div>
                 </div>
+                
+                <!-- ★ 修正: 全体的な設定（スタイルと焦点） -->
+                <div class="flex justify-start items-center space-x-4 mb-4 p-3 bg-slate-50 rounded-lg border">
+                    <div>
+                        <label for="generation-style-select" class="block text-xs font-medium text-slate-700 mb-1">文章スタイル</label>
+                        <select id="generation-style-select" class="bg-white border border-slate-300 text-slate-600 font-semibold py-1 px-3 rounded-md hover:bg-slate-50 text-xs" title="文章生成のスタイルを選択">
+                            <option value="academic_expert">専門家向け (厳密)</option>
+                            <option value="academic_general">専門外学者向け (明快)</option>
+                            <option value="frank_summary">フランクな概要 (会話風)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="generation-focus-select" class="block text-xs font-medium text-slate-700 mb-1">記述の焦点</label>
+                        <select id="generation-focus-select" class="bg-white border border-slate-300 text-slate-600 font-semibold py-1 px-3 rounded-md hover:bg-slate-50 text-xs" title="文章生成の焦点を選択">
+                            <option value="timeline">タイムライン重視</option>
+                            <option value="design">論文の設計/特徴重視</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div id="canvas" class="flex-grow bg-white rounded-xl p-4 shadow-inner">
                     <div class="text-center text-slate-400 placeholder-text">
                         <p class="text-lg font-semibold">ここにブロックを追加</p>
@@ -357,3 +374,4 @@
 
 </body>
 </html>
+

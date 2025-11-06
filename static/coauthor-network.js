@@ -1,8 +1,8 @@
 // Co-author Network Visualization -> Timeline Visualization
 function renderCoauthorTimeline(svg, data, state, callbacks) {
     svg.selectAll("*").remove();
-    const { timeline_data, nodes: papers, co_author_data, institution_data } = data;
-    const { onGroupClick, onInstitutionGroupClick } = callbacks;
+    const { timeline_data, nodes: papers, co_author_data } = data;
+    const { onGroupClick } = callbacks;
 
     if (!timeline_data || timeline_data.length === 0) {
         svg.append("text")
@@ -24,7 +24,7 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
 
     // --- Group data by category ---
     const dataByCategory = d3.group(timeline_data, d => d.category);
-    const categories = ["Research Group", "Institution", "Journal"]; // Define order
+    const categories = ["Research Group", "Journal"]; // Define order
     
     let y_items = [];
     categories.forEach(cat => {
@@ -104,7 +104,6 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
         .attr("ry", 3)
         .style("fill", d => {
             if (d.category === "Research Group") return "#1f77b4";
-            if (d.category === "Institution") return "#ff7f0e";
             if (d.category === "Journal") return "#2ca02c";
             return "#ccc";
         })
@@ -118,12 +117,6 @@ function renderCoauthorTimeline(svg, data, state, callbacks) {
                 if (!isNaN(clusterId) && co_author_data) {
                     const members = co_author_data.nodes.filter(n => n.cluster === clusterId);
                     onGroupClick(d.name, members);
-                }
-            } else if (d.category === "Institution" && onInstitutionGroupClick) {
-                const clusterId = parseInt(d.name.replace("Institution Group ", ""), 10);
-                if (!isNaN(clusterId) && institution_data) {
-                    const members = institution_data.nodes.filter(n => n.cluster === clusterId);
-                    onInstitutionGroupClick(d.name, members);
                 }
             }
         });

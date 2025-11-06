@@ -2,7 +2,13 @@
 
 let temporalChartType = 'stream'; // 'stream' or 'bar'
 
-function showKeywordDetailsModal(topic) {
+/**
+ * トピック要約モーダル
+ * APIを呼び出してトピックの要約を生成・表示します。
+ * @param {object} topic - トピック情報 (topic_info の要素)
+ * @param {Array} allNodes - 全論文ノードのリスト (currentData.nodes)
+ */
+async function showKeywordDetailsModal(topic, allNodes) {
     const modal = document.getElementById('keyword-modal');
     const titleEl = document.getElementById('modal-title');
     const contentEl = document.getElementById('modal-content');
@@ -13,37 +19,10 @@ function showKeywordDetailsModal(topic) {
         return;
     }
 
-    titleEl.textContent = `トピック ${topic.Topic} - キーワード詳細`;
+    // 修正点 3: タイトルを「トピック要約」に変更
+    titleEl.textContent = `トピック ${topic.Topic} - 要約`;
     
-    contentEl.innerHTML = ''; // Clear previous content
-
-    if (!topic.AllKeywords || topic.AllKeywords.length === 0) {
-        contentEl.innerHTML = '<p>詳細なキーワードデータがありません。</p>';
-    } else {
-        const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left';
-        table.innerHTML = `
-            <thead class="text-xs text-slate-700 uppercase bg-slate-50">
-                <tr>
-                    <th scope="col" class="px-4 py-2">キーワード</th>
-                    <th scope="col" class="px-4 py-2 text-right">c-TF-IDFスコア</th>
-                </tr>
-            </thead>
-        `;
-        const tbody = document.createElement('tbody');
-        topic.AllKeywords.forEach(kw => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            const cell1 = row.insertCell();
-            cell1.className = 'px-4 py-2 font-medium text-slate-900 whitespace-nowrap';
-            cell1.textContent = kw.word;
-            const cell2 = row.insertCell();
-            cell2.className = 'px-4 py-2 text-right';
-            cell2.textContent = kw.score.toFixed(4);
-        });
-        table.appendChild(tbody);
-        contentEl.appendChild(table);
-    }
+    contentEl.innerHTML = '<p class="text-slate-500">トピックの要約を生成中です...</p>';
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -59,6 +38,61 @@ function showKeywordDetailsModal(topic) {
             closeModal();
         }
     };
+
+    // --- 修正点 3: 要約生成ロジック ---
+    try {
+        if (!window.callGeminiAPI) {
+            throw new Error("Gemini API (window.callGeminiAPI) が見つかりません。");
+        }
+
+        const topicNodes = allNodes.filter(node => node.topic === topic.Topic);
+        
+        // プロンプトに含める論文情報を構築（引用数上位10件）
+        const papersInfo = topicNodes
+            .sort((a, b) => b.cit_cnt - a.cit_cnt) // 引用数でソート
+            .slice(0, 10) // 上位10件
+            .map(p => `- "${p.title}" (${p.year}), 引用数: ${p.cit_cnt}, 要旨: ${p.abstract ? p.abstract.substring(0, 150) + '...' : 'N/A'}`);
+
+        // 詳細キーワード情報（上位15件）
+        const keywordsInfo = (topic.AllKeywords || [])
+            .slice(0, 15) // 上位15キーワード
+            .map(kw => `${kw.word} (スコア: ${kw.score.toFixed(3)})`)
+            .join(', ');
+
+        const prompt = `
+以下の情報に基づき、学術的なトピック（研究テーマ）について、その概要と重要性を解説する日本語の要約（約200～300文字程度）を作成してください。
+
+# トピック情報
+- トピックID: ${topic.Topic}
+- 主要キーワード (c-TF-IDF): ${topic.Keywords}
+- 詳細キーワード (上位15件): ${keywordsInfo}
+- トピック内の論文数: ${topicNodes.length} 件
+
+# トピック内の主要論文 (引用数トップ10)
+${papersInfo.join('\n')}
+
+# 要約の構成
+1. このトピックがどのような研究テーマ（分野）であるかを定義してください。
+2. このトピックの主な貢献や焦点（例えば、特定の手法、特定の課題への応用など）を説明してください。
+3. この分野における重要性や変遷について簡潔に触れてください。
+`;
+
+        const summaryText = await window.callGeminiAPI(prompt);
+        
+        // 生成されたテキストを整形して表示
+        contentEl.innerHTML = `
+            <div class="prose prose-sm max-w-none">
+                <p>${summaryText.replace(/\n/g, '<br>')}</p>
+                <hr class="my-3">
+                <h4 class="font-semibold mb-2">トピックの主要キーワード (c-TF-IDF)</h4>
+                <p class="text-xs text-slate-600">${topic.Keywords}</p>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("トピック要約の生成に失敗しました:", error);
+        contentEl.innerHTML = `<p class="text-red-500">要約の生成に失敗しました: ${error.message}</p>`;
+    }
 }
 
 
@@ -137,7 +171,21 @@ function renderStreamgraph(svg, data, state, callbacks) {
     if (W <= 0 || H <= 0) return;
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
-    const topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
+    
+    // --- 修正点: topicIds の順序をカスタマイズ ---
+    let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
+    
+    // 要求2: クリックしたトピック（1つの場合）をリストの先頭（＝底辺）に移動
+    if (selectionState.topics.size === 1) {
+        const selectedTopicId = [...selectionState.topics][0];
+        const index = topicIds.indexOf(selectedTopicId);
+        if (index > -1) {
+            topicIds.splice(index, 1); // 削除
+            topicIds.unshift(selectedTopicId); // 先頭に追加
+        }
+    }
+    // --- 修正ここまで ---
+
     const dataForStream = Array.from(countsByYearTopic.entries()).map(([year, topics]) => ({ year, ...Object.fromEntries(topicIds.map(id => [id, topics.get(id) || 0])) })).sort((a, b) => a.year - b.year);
 
     if (dataForStream.length < 2) {
@@ -147,8 +195,8 @@ function renderStreamgraph(svg, data, state, callbacks) {
 
     const series = d3.stack()
         .keys(topicIds)
-        .order(d3.stackOrderInsideOut)
-        .offset(d3.stackOffsetNone) // Changed from d3.stackOffsetWiggle
+        .order(d3.stackOrderNone) // 修正点 2: keysの順序(カスタマイズ済み)をそのまま使う
+        .offset(d3.stackOffsetExpand) // 修正点 1: 割合(0-1)で表示
         (dataForStream);
         
     const xScale = d3.scaleLinear()
@@ -156,7 +204,7 @@ function renderStreamgraph(svg, data, state, callbacks) {
         .range([MARGIN.left, W - MARGIN.right]);
         
     const yScale = d3.scaleLinear()
-        .domain([0, d3.max(series, d => d3.max(d, d => d[1]))]).nice() // Set domain from 0 to max
+        .domain([0, 1]) // 修正点 1: 割合(0-1)
         .range([H - MARGIN.bottom, MARGIN.top]);
         
     const area = d3.area()
@@ -177,7 +225,7 @@ function renderStreamgraph(svg, data, state, callbacks) {
     svg.on("click", onBackgroundClick);
 
     svg.append("g").attr("transform", `translate(0, ${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
-    svg.append("g").attr("transform", `translate(${MARGIN.left}, 0)`).call(d3.axisLeft(yScale).ticks(5));
+    svg.append("g").attr("transform", `translate(${MARGIN.left}, 0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"))); // 修正点 1: %フォーマット
 }
 
 
@@ -200,15 +248,34 @@ function renderBarChart(svg, data, state, callbacks) {
     if (W <= 0 || H <= 0) return;
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
-    const topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
+    
+    // --- 修正点: topicIds の順序をカスタマイズ ---
+    let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
+    
+    // 要求2: クリックしたトピック（1つの場合）をリストの先頭（＝底辺）に移動
+    if (selectionState.topics.size === 1) {
+        const selectedTopicId = [...selectionState.topics][0];
+        const index = topicIds.indexOf(selectedTopicId);
+        if (index > -1) {
+            topicIds.splice(index, 1); // 削除
+            topicIds.unshift(selectedTopicId); // 先頭に追加
+        }
+    }
+    // --- 修正ここまで ---
+
     const dataForStack = Array.from(countsByYearTopic.entries()).map(([year, topics]) => ({ year, ...Object.fromEntries(topicIds.map(id => [id, topics.get(id) || 0])) })).sort((a, b) => a.year - b.year);
     
     if (dataForStack.length === 0) return;
 
-    const series = d3.stack().keys(topicIds)(dataForStack);
+    const series = d3.stack()
+        .keys(topicIds)
+        .order(d3.stackOrderNone) // 修正点 2: keysの順序(カスタマイズ済み)をそのまま使う
+        .offset(d3.stackOffsetExpand) // 修正点 1: 割合(0-1)で表示
+        (dataForStack);
+
     const years = dataForStack.map(d => d.year);
     const xScale = d3.scaleBand().domain(years).range([MARGIN.left, W - MARGIN.right]).padding(0.2);
-    const yScale = d3.scaleLinear().domain([0, d3.max(series, d => d3.max(d, d => d[1]))]).nice().range([H - MARGIN.bottom, MARGIN.top]);
+    const yScale = d3.scaleLinear().domain([0, 1]).nice().range([H - MARGIN.bottom, MARGIN.top]); // 修正点 1: 割合(0-1)
 
     const g = svg.append("g");
     g.selectAll("g").data(series).join("g")
@@ -228,18 +295,20 @@ function renderBarChart(svg, data, state, callbacks) {
             .append("title").text(d => {
                 const topicKey = series.find(s => s.includes(d)).key;
                 const topic = topic_info.find(t => t.Topic === topicKey);
-                return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\nCount: ${d[1] - d[0]}`;
+                // 修正点 1: 割合を表示
+                const percentage = (d[1] - d[0]) * 100;
+                return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\n割合: ${percentage.toFixed(1)}%`;
             });
 
     svg.on("click", onBackgroundClick);
     const xAxis = g.append("g").attr("transform", `translate(0,${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickValues(xScale.domain().filter((d,i) => !(i%Math.ceil(years.length/10)) || i === years.length - 1)));
     xAxis.selectAll("text").attr("transform", "rotate(-45)").style("text-anchor", "end");
-    g.append("g").attr("transform", `translate(${MARGIN.left},0)`).call(d3.axisLeft(yScale));
+    g.append("g").attr("transform", `translate(${MARGIN.left},0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"))); // 修正点 1: %フォーマット
 }
 
 
 function renderKeywordLegend(container, data, state, callbacks) {
-    const { topic_info } = data;
+    const { topic_info, nodes } = data; // 'nodes' を data から取得
     const { selectionState, color } = state;
     const { onTopicClick } = callbacks;
 
@@ -264,7 +333,8 @@ function renderKeywordLegend(container, data, state, callbacks) {
         item.style.backgroundColor = isSelected ? d3.color(color(topic.Topic)).copy({opacity: 0.1}) : 'white';
         item.style.opacity = (noSelection || isSelected) ? 1 : 0.5;
 
-        const detailsButtonHtml = isSelected ? `<div class="mt-2"><button class="keyword-details-btn text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-200">キーワード比重</button></div>` : '';
+        // 修正点 3: ボタンテキストを「トピック要約」に変更
+        const detailsButtonHtml = isSelected ? `<div class="mt-2"><button class="keyword-details-btn text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-200">トピック要約</button></div>` : '';
         item.innerHTML = `
             <div class="flex items-center mb-1">
                 <span class="w-4 h-4 rounded-full mr-2" style="background-color: ${color(topic.Topic)};"></span>
@@ -281,7 +351,8 @@ function renderKeywordLegend(container, data, state, callbacks) {
         const topic = topics.find(t => t.Topic === topicId);
         if (e.target.closest('.keyword-details-btn')) {
             e.stopPropagation();
-            showKeywordDetailsModal(topic);
+            // 修正点 3: 'nodes' (allNodes) をモーダル関数に渡す
+            showKeywordDetailsModal(topic, nodes); 
         } else {
             onTopicClick(topicId);
         }

@@ -70,57 +70,8 @@ def analyze_co_authorship(papers, main_author_name):
 
     return {"nodes": nodes, "links": links}
 
-def analyze_institution_collaboration(papers):
-    """所属機関の連携ネットワークを分析し、クラスタリングする"""
-    if not papers:
-        return {"nodes": [], "links": []}
-
-    institution_collaborations = defaultdict(lambda: {'years': [], 'paper_ids': []})
-    edges = defaultdict(int)
-
-    for paper_id, p in papers.items():
-        institutions = p.get('institution_names', [])
-        if len(institutions) < 2:  # 連携がない場合はスキップ
-            continue
-
-        for inst in institutions:
-            if p['year'] and p['year'] > 0:
-                institution_collaborations[inst]['years'].append(p['year'])
-                institution_collaborations[inst]['paper_ids'].append(paper_id)
-
-        for inst1, inst2 in itertools.combinations(institutions, 2):
-            edge = tuple(sorted((inst1, inst2)))
-            edges[edge] += 1
-
-    G = nx.Graph()
-    for (u, v), w in edges.items():
-        G.add_edge(u, v, weight=w)
-
-    partition = {}
-    if G.nodes:
-        communities_sets = community.louvain_communities(G, weight='weight', seed=42)
-        for i, community_set in enumerate(communities_sets):
-            for node in community_set:
-                partition[node] = i
-
-    nodes = []
-    for inst, data in institution_collaborations.items():
-        years = data['years']
-        if not years: continue
-        nodes.append({
-            "id": inst,
-            "cluster": partition.get(inst, -1),
-            "paper_count": len(data['paper_ids']),
-            "start_year": min(years),
-            "end_year": max(years)
-        })
-
-    links = [{"source": u, "target": v, "weight": w} for (u, v), w in edges.items()]
-    return {"nodes": nodes, "links": links}
-
-
-def analyze_timeline_entities(papers, co_author_data, institution_data):
-    """研究グループ、所属機関グループ、論文誌の活動期間を分析する"""
+def analyze_timeline_entities(papers, co_author_data):
+    """研究グループ、論文誌の活動期間を分析する"""
     timeline_data = []
 
     # 1. 研究グループ (Research Groups)
@@ -138,23 +89,6 @@ def analyze_timeline_entities(papers, co_author_data, institution_data):
                     "start_year": min(years),
                     "end_year": max(years),
                     "category": "Research Group"
-                })
-
-    # 2. 所属機関グループ (Institution Groups)
-    if institution_data and "nodes" in institution_data:
-        group_years = defaultdict(list)
-        for inst in institution_data["nodes"]:
-            cluster_id = inst.get("cluster")
-            if cluster_id is not None and cluster_id != -1:
-                group_years[cluster_id].extend([inst["start_year"], inst["end_year"]])
-
-        for cluster_id, years in group_years.items():
-            if years:
-                timeline_data.append({
-                    "name": f"Institution Group {cluster_id}",
-                    "start_year": min(years),
-                    "end_year": max(years),
-                    "category": "Institution"
                 })
 
     # 3. 論文誌 (Journals)
@@ -177,10 +111,9 @@ def analyze_timeline_entities(papers, co_author_data, institution_data):
     
     # Sort each category by start year and then combine
     groups = sorted([d for d in timeline_data if d['category'] == 'Research Group'], key=lambda x: x['start_year'])
-    institutions = sorted([d for d in timeline_data if d['category'] == 'Institution'], key=lambda x: x['start_year'])
     journals = sorted([d for d in timeline_data if d['category'] == 'Journal'], key=lambda x: x['start_year'])
     
-    return groups + institutions + journals
+    return groups + journals
 
 def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data=None, main_author_name=None, vector_cache=None):
     """
@@ -189,11 +122,10 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
     """
     print("\n[analyzer] Step 1/6: Starting analysis...")
     
-    # --- 1. 事前分析 (共著者、所属機関、タイムライン) ---
-    print("[analyzer] Step 2/6: Analyzing co-authors and institutions...")
+    # --- 1. 事前分析 (共著者、タイムライン) ---
+    print("[analyzer] Step 2/6: Analyzing co-authors...")
     co_author_data = analyze_co_authorship(papers, main_author_name)
-    institution_data = analyze_institution_collaboration(papers)
-    timeline_data = analyze_timeline_entities(papers, co_author_data, institution_data)
+    timeline_data = analyze_timeline_entities(papers, co_author_data)
 
     if not precomputed_data:
         precomputed_data = {}
@@ -237,19 +169,25 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             
             # 3a. 分析対象の論文リストを作成
             docs, pids_with_abs, years = [], [], []
+            
+            # ★ 修正点: 最小単語数を定義
+            MIN_ABSTRACT_WORDS = 50
+
             for pid, p in papers.items():
-                if (abs_text := (p.get("abstract") or "").strip()) and p.get("year"):
+                # ★ 修正: and len(abs_text.split()) >= MIN_ABSTRACT_WORDS を追加
+                if (abs_text := (p.get("abstract") or "").strip()) and p.get("year") and len(abs_text.split()) >= MIN_ABSTRACT_WORDS:
                     docs.append(abs_text)
                     pids_with_abs.append(pid)
                     years.append(p["year"])
                 else:
+                    # フィルター（アブストラクトなし、年なし、または単語数不足）
                     p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
             
             if not docs or len(docs) < params.get('n_neighbors', 15):
                 print("[analyzer] Not enough documents for analysis. Skipping.")
-                return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "institution_data": institution_data, "timeline_data": timeline_data}
+                return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "timeline_data": timeline_data}
             
-            print(f"[analyzer] Found {len(docs)} documents with abstract and year for analysis.")
+            print(f"[analyzer] Found {len(docs)} documents with abstract (>= {MIN_ABSTRACT_WORDS} words) and year for analysis.")
             
             # 3b. 論文ごとキャッシュを確認し、ベクトル化が必要なリストを作成
             content_vectors_map = {}
@@ -422,7 +360,6 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         "papers": papers, "topic_info": topic_info, "dendrogram_data": dendrogram_tree,
         "top_overall_keywords": top_overall_keywords, "precomputed_data": precomputed_data,
         "co_author_data": co_author_data,
-        "institution_data": institution_data,
         "timeline_data": timeline_data
     }
 
