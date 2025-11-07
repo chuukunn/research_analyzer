@@ -722,7 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: node.details.title,
                         abstract: node.details.abstract,
                         year: node.details.year,
-                        authors: node.details.authors,
+                        authors: node.details.authors, // ★ 要望2: 既存
+                        authorships: node.details.authorships || [], // ★ 要望2: 新規追加
                         pdf_url: node.details.pdf_url || "",
                         references: references,
                         citedBy: citedBy
@@ -760,33 +761,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ★ 修正: author_group を author として収集
                 else if (node.type === 'author' || node.type === 'author_group') {
                     
-                    // author_group の場合は、詳細の著者リストをループする
-                    const authorsToProcess = (node.type === 'author_group') 
-                        ? (node.details.authors || []) // {id, paper_count, ...} の配列
-                        : [
-                            { // author ノードの場合は、単一の要素を持つ配列を作成
-                                id: node.name.replace('著者: ', ''), // '著者: ' プレフィックスを削除
-                                paper_count: node.details.coauthorCount,
-                                // 'author' ノードには coauthoredPapers があるが、author_group にはない。
-                                // analyzer.py と visualization.js を再確認
-                                // -> visualization.js は author ノードに coauthoredPapersDetails を追加している
-                                // -> coauthor-network.js は coauthoredPapers を追加していない
-                                // -> この差を吸収する必要がある
-                                mostFrequentTopic: node.details.mostFrequentTopic,
-                                coauthoredPapers: node.details.coauthoredPapers || [], // 'author' ノードのみ
-                                citationAmount: node.details.citationAmount || 'normal'
-                            }
-                          ];
+                    if (node.type === 'author_group') {
+                        // --- グループの場合の処理 ---
+                        const authorIdsInGroup = (node.details.authors || []).map(a => a.id);
+                        let commonPapers = [];
 
-                    authorsToProcess.forEach(authorData => {
+                        if (authorIdsInGroup.length > 0 && allNodesMap.size > 0) {
+                            allNodesMap.forEach(paper => { // 全論文をチェック
+                                const paperAuthors = new Set(paper.authors || []);
+                                const allInGroupAreAuthors = authorIdsInGroup.every(authorId => paperAuthors.has(authorId));
+                                
+                                if (allInGroupAreAuthors) {
+                                    commonPapers.push({
+                                        title: paper.title,
+                                        abstract: paper.abstract,
+                                        year: paper.year,
+                                        authors: paper.authors
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // collected.authors にグループ情報を追加
                         collected.authors.push({
-                            name: authorData.id || authorData.name, // 'id' または 'name' フィールドを使用
-                            coauthorCount: authorData.paper_count || authorData.coauthorCount,
-                            mostFrequentTopic: authorData.mostFrequentTopic,
-                            coauthoredPapers: authorData.coauthoredPapers || [], // 'author' ノードのみ
-                            citationAmount: authorData.citationAmount || 'normal' // ★ 追加
+                            name: node.name, // "著者グループ (X名)"
+                            isGroup: true, // ★ グループであることを明記
+                            groupMembers: authorIdsInGroup,
+                            commonPapers: commonPapers, // ★ 要望2: 共通論文リスト
+                            citationAmount: node.details.citationAmount || 'normal'
                         });
-                    });
+
+                    } else {
+                        // --- 個別著者の場合の処理 (既存) ---
+                        const authorData = {
+                            id: node.name.replace('著者: ', ''),
+                            paper_count: node.details.coauthorCount,
+                            mostFrequentTopic: node.details.mostFrequentTopic,
+                            coauthoredPapers: node.details.coauthoredPapers || [],
+                            citationAmount: node.details.citationAmount || 'normal'
+                        };
+                        collected.authors.push({
+                            name: authorData.id,
+                            isGroup: false, // ★ グループではない
+                            coauthorCount: authorData.paper_count,
+                            mostFrequentTopic: authorData.mostFrequentTopic,
+                            coauthoredPapers: authorData.coauthoredPapers,
+                            citationAmount: authorData.citationAmount
+                        });
+                    }
                 }
                 
                 if (node.memo) {
@@ -870,22 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
 
-            // ★ 修正: トピックと著者の構成要素に citationAmount を追加
-            // ★ 修正: author_group の場合、internalData が空になるため、node.details.authors から直接著者リストを作成する
-            let authorNodeData;
-            if (paragraphNode.type === 'author_group') {
-                authorNodeData = (paragraphNode.details.authors || []).map(a => ({
-                    name: a.id,
-                    coauthorCount: a.paper_count,
-                    mostFrequentTopic: "N/A", // この情報は coauthor-network.js から渡されていない
-                    citationAmount: paragraphNode.details.citationAmount || 'normal',
-                    coauthoredPapers: [] // この情報も渡されていない
-                }));
-            } else {
-                authorNodeData = internalData.authors;
-            }
-
-
+            // ★ 修正: internalData.authors をそのまま使用
             const prompt = `
 ${personaPrompt}
 ${focusPrompt}
@@ -906,13 +913,14 @@ ${mainAuthorName}
 ${contextInfo}
 ### 構成要素（このパラグラフに含めるべき情報） ###
 ---
-[論文ノード] (ID, タイトル, 年, 要旨, PDFリンク, この論文が引用する論文リスト, この論文を引用する論文リスト): 
+[論文ノード] (ID, タイトル, 年, 要旨, PDFリンク, 著者リスト(ポジション情報含む), この論文が引用する論文リスト, この論文を引用する論文リスト): 
 ${JSON.stringify(internalData.papers.map(p => ({
     id: p.id, 
     title: p.title, 
     year: p.year, 
     abstract: p.abstract,
     pdf_url: p.pdf_url,
+    authorships: (p.authorships || []).map(a => ({ name: a.name, position: a.position })), // ★ 要望2: 修正
     references: p.references.map(r => r.title),
     citedBy: p.citedBy.map(c => c.title)
 })))}
@@ -931,18 +939,35 @@ ${JSON.stringify(internalData.topics.map(t => ({
     internalRelationships: t.internalRelationships
 })))}
 ---
-[著者ノード] (名前, 共著数, 主要トピック, 言及する論文数の希望, 全共著論文リスト(要旨,年)):
-${JSON.stringify(authorNodeData.map(a => ({ // ★ 修正: authorNodeData を使用
-    name: a.name,
-    coauthorCount: a.coauthorCount,
-    mostFrequentTopic: a.mostFrequentTopic,
-    citationAmount: a.citationAmount, // ★ 追加
-    coauthoredPapers: a.coauthoredPapers.map(p => ({
-        title: p.title,
-        abstract: p.abstract,
-        year: p.year
-    }))
-})))}
+[著者・著者グループノード] (名前, グループか?, 詳細):
+${JSON.stringify(internalData.authors.map(a => {
+    if (a.isGroup) { // ★ グループの場合
+        return {
+            name: a.name,
+            isGroup: true,
+            groupMembers: a.groupMembers,
+            commonPapers: a.commonPapers.map(p => ({ // ★ 要望2: 共通論文
+                title: p.title,
+                abstract: p.abstract,
+                year: p.year
+            })),
+            citationAmount: a.citationAmount
+        };
+    } else { // ★ 個別著者の場合
+        return {
+            name: a.name,
+            isGroup: false,
+            coauthorCount: a.coauthorCount,
+            mostFrequentTopic: a.mostFrequentTopic,
+            citationAmount: a.citationAmount,
+            coauthoredPapers: a.coauthoredPapers.map(p => ({
+                title: p.title,
+                abstract: p.abstract,
+                year: p.year
+            }))
+        };
+    }
+}))}
 ---
 [論文間の関係性(パラグラフ内)] (引用): 
 ${JSON.stringify(internalData.relationships)}
@@ -955,13 +980,16 @@ ${JSON.stringify(internalData.memos)}
 1.  **優先順位（★最重要）:** もしこのパラグラフ内に[論文ノード]と[トピックノード]が**両方**含まれている場合、あなたは[論文ノード]で指定された個別の論文（およびその引用関係）を議論の**中心**に据えなければなりません。[トピックノード]の情報（\`allPapersInTopic\`や\`internalRelationships\`）は、それらの中心的な論文の背景、文脈、またはそのトピック全体における位置づけを説明するために**補足的**に使用してください。話が重複しないよう、論文ノードの情報を優先してください。
 2.  **論理構成:** まず、このパラグラフに含まれる論文全体の「研究背景」や「問題点」を（各論文の要旨やトピック情報から抽出し）冒頭にまとめて提示してください。その後、時系列や論理の流れ（例えば、アプローチ、結果、考察）に沿って、各論文の貢献を説明してください。単なる情報の羅列を避け、自然な流れになるように接続詞（「しかし」「そのため」「さらに」など）を適切に使用してください。
 3.  **時系列と焦点:** \`記述の焦点（Focus）\` の指示（タイムライン重視 vs 設計/特徴重視）に従ってください。
-4.  **著者中心:** ${mainAuthorName} が（または ${mainAuthorName} を中心とするチームが）何を行ったのか、という視点を明確にしてください。
-5.  **著者情報の反映:** 「構成要素」に『著者ノード』が含まれている場合、その著者（${mainAuthorName} の共著者）がどのような共同研究（名前、共著論文数、主要トピック、共著論文リスト）を行ったかについて、本文中に具体的に組み込んでください。（例：～は、${mainAuthorName} の主要な共同研究者の一人であり、特に[トピック名]の分野で[XX]件の論文を共著している。）
+4.  **著者中心:** ${mainAuthorName} が（または ${mainAuthorName} を中心とするチームが）何を行ったのか、という視点を明確にしてください。[論文ノード]の \`authorships\` リストを参照し、${mainAuthorName} がその論文でどのような役割（例：'first'（筆頭著者）、'last'（責任著者）、'middle'（共著者））を果たしたかを特定し、記述に反映させてください。（例：${mainAuthorName} が筆頭著者として発表した[論文X]では...）
+5.  **著者情報の反映:** 「構成要素」に『著者・著者グループノード』が含まれている場合、その指示に従ってください。
+    * **個別著者:** その著者（${mainAuthorName} の共著者）がどのような共同研究（名前、共著論文数、主要トピック、共著論文リスト）を行ったかについて、本文中に具体的に組み込んでください。
+    * **著者グループ:** そのグループ（\`name\`, \`groupMembers\`）が、**全員で共著**した論文（\`commonPapers\` リスト）について言及してください。共通論文のリストに基づき、その共同研究の性質（例：特定のテーマ、時期）を要約してください。
 6.  **関係性の反映(修正):** 「構成要素」の[論文ノード]には、その論文が引用する論文(\`references\`)と、その論文を引用する論文(\`citedBy\`)のリストが含まれています。また、[論文間の関係性(パラグラフ内)]には、このパラグラフ内の論文同士の引用関係が示されています。これらの情報を利用し、論文間の文脈（例：「この研究は、[論文A]の結果を発展させたものである...」や「[論文B]は、[論文A]に引用されており、後の研究の基礎となった...」）を記述に含めてください。
 7.  **参照形式（厳守）:** 「構成要素」に含まれる論文に言及する際は、必ず \`[論文: "論文のタイトル" (ID: paper_id)]\` という形式を使用してください。**構成要素に含まれていない論文を新たに追加で引用しないでください。** ハルシネーションは厳禁です。
 8.  **出力:** 指示された内容の文章（パラグラフ）のみとし、余計な前置きや見出しは含めないでください。
 9.  **★ 年代の注目:** 「構成要素」の[トピックノード]に \`selectedRange\` (例: \`[2015, 2020]\`) が指定されている場合、その年代範囲（${'${t.selectedRange[0]}'}年～${'${t.selectedRange[1]}'}年）に発表された論文（リスト内の該当する論文）に特に注目し、その時期の研究がどのような意味を持つのかを重点的に記述してください。（例：「特に2015年から2020年にかけて、[論文X]や[論文Y]が発表され、この分野の転換点となった...」）
-10. **★ 言及数の調整:** [トピックノード]および[著者ノード]には、\`citationAmount\` (言及する論文数の希望: 'low' (1-3件), 'normal' (4-5件), 'high' (6件以上)) が指定されています。その指示に従い、各ノードのデータ（\`allPapersInTopic\` や \`coauthoredPapers\`）から言及する論文の数を調整してください。（論文ノードは必ず言及してください）
+10. **★ 言及数の調整:** [トピックノード]および[著者・著者グループノード]には、\`citationAmount\` (言及する論文数の希望: 'low' (1-3件), 'normal' (4-5件), 'high' (6件以上)) が指定されています。その指示に従い、各ノードのデータ（\`allPapersInTopic\` や \`coauthoredPapers\`、\`commonPapers\`）から言及する論文の数を調整してください。（論文ノードは必ず言及してください）
+11. **改行:** 文章は適度に改行（空行）を入れて、読みやすくしてください。
 `;
             return prompt;
         }
@@ -981,8 +1009,9 @@ ${JSON.stringify(internalData.memos)}
                     .replace(/^## (.*$)/gim, '<h3 class="font-semibold text-base mt-3 mb-1">$1</h3>')
                     .replace(/^# (.*$)/gim, '<h2 class="font-semibold text-lg mt-4 mb-2">$1</h2>')
                     .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
-                    .replace(/\n/g, '<br />');
+                    .replace(/\n/g, '<br />'); // ★ 要望1: この行が改行を <br> に変換します
 
+                // ★ 要望1: リンク生成ロジックの改善
                 formattedText = formattedText.replace(
                     /\[論文: "([^"]+)"(?:\s\(([^)]+)\))?\]/g,
                     (match, title, parenthesesContent) => {
@@ -991,19 +1020,37 @@ ${JSON.stringify(internalData.memos)}
                         const allNodes = window.currentVisualizationData ? window.currentVisualizationData.nodes : [];
                         let paperNode = null;
 
+                        // 1. IDの抽出を試みる
                         if (parenthesesContent) {
                             const idMatch = parenthesesContent.match(/ID:\s*([Ww]\d+)/);
                             if (idMatch && idMatch[1]) {
                                 paperId = idMatch[1].trim();
+                                paperNode = allNodes.find(p => p.paper_id === paperId);
                             }
                         }
 
-                        if (paperId) {
-                            paperNode = allNodes.find(p => p.paper_id === paperId);
-                        } else {
+                        // 2. IDで見つからない場合、タイトルで完全一致検索
+                        if (!paperNode) {
                             paperNode = allNodes.find(p => p.title.toLowerCase() === title.toLowerCase());
                             if (paperNode) {
                                 paperId = paperNode.paper_id;
+                            }
+                        }
+                        
+                        // 3. それでも見つからない場合、正規化して部分一致検索（寛容なフォールバック）
+                        if (!paperNode) {
+                            try {
+                                const normalizedTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                if (normalizedTitle.length > 10) { // 短すぎるタイトルでの誤爆を防ぐ
+                                    paperNode = allNodes.find(p => 
+                                        p.title.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalizedTitle)
+                                    );
+                                    if (paperNode) {
+                                        paperId = paperNode.paper_id;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Error during normalized title search:", e);
                             }
                         }
 
@@ -1020,7 +1067,9 @@ ${JSON.stringify(internalData.memos)}
                                         <span class="paper-link text-xs text-slate-500 hover:underline cursor-pointer ml-1" data-paper-id="${paperId}" title="クリックして左の分析ビューで選択">[分析ビュー]</span>`;
                             }
                         } else {
-                            return title;
+                            // ★ 修正: リンクが見つからない場合は赤色で表示
+                            console.warn(`Could not find paper for: "${title}"`);
+                            return `<span class="text-red-600" title="分析データ内に該当する論文が見つかりませんでした">${title}</span>`;
                         }
                     }
                 );

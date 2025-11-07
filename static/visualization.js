@@ -484,7 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         paper_id: paper.paper_id,
                         title: paper.title,
                         year: paper.year,
-                        authors: paper.authors,
+                        authors: paper.authors, // ★ 要望2: 後方互換性のため残す
+                        authorships: paper.authorships || [], // ★ 要望2: 筆頭著者情報
                         abstract: paper.abstract,
                         keywords: paperKeywords, // 論文固有のキーワード
                         
