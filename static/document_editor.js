@@ -251,6 +251,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodyHtml = `<div class="component-memo p-2 border-t border-slate-200 bg-slate-100"><textarea class="prose-textarea auto-resize-textarea data-memo-input" placeholder="このフォルダーに関するメモ..."></textarea></div>
                             <div class="component-children-container min-h-[40px] bg-slate-50 p-2 rounded-b-md border-t"></div>`;
                 break;
+            // ★ 追加: author_group ケース
+            case 'author_group':
+                headerHtml = `<input type="text" class="font-semibold text-sm bg-transparent focus:bg-white focus:ring-1 focus:ring-indigo-500 rounded p-1 w-full" value="${data.name || '著者グループ'}">`;
+                const authorsList = (data.details.authors || [])
+                    .map(author => 
+                        `<li class="text-xs text-slate-700">${author.id} (${author.paper_count}件, ${author.start_year}-${author.end_year})</li>`
+                    )
+                    .join('');
+                
+                const authorGroupBody = `<div class="prose prose-sm max-w-none">
+                                        <p><strong>グループ構成員 (${data.details.authors ? data.details.authors.length : 0}名):</strong></p>
+                                        <ul class="list-disc list-inside">${authorsList}</ul>
+                                        <div class="mt-2">
+                                            <label class="text-xs font-medium text-slate-700">言及する論文数:</label>
+                                            <select class="data-citation-amount text-xs p-1 border-slate-300 rounded-md">
+                                                <option value="normal" ${data.details.citationAmount === 'normal' ? 'selected' : ''}>普通 (4-5件)</option>
+                                                <option value="low" ${data.details.citationAmount === 'low' ? 'selected' : ''}>少なめ (1-3件)</option>
+                                                <option value="high" ${data.details.citationAmount === 'high' ? 'selected' : ''}>多め (6件以上)</option>
+                                            </select>
+                                        </div>
+                                    </div>`;
+                bodyHtml = `<div class="component-body p-2">${authorGroupBody}</div><div class="component-memo p-2 border-t border-slate-200 bg-slate-50 rounded-b-md"><textarea class="prose-textarea auto-resize-textarea data-memo-input" placeholder="このグループに関するメモ..."></textarea></div>`;
+                break;
             case 'author':
                 headerHtml = `<h3 class="font-semibold text-sm truncate pr-2" title="${data.name}">${data.name}</h3>`;
                 const authorStats = data.details || {};
@@ -408,18 +431,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return component;
     }
 
-    function addBlock(data, targetContainer = canvas) {
+    // ★ 修正: addBlock -> addEditorBlock にリネームし、グローバルに公開
+    function addEditorBlock(data, targetContainer = canvas) {
         const placeholder = canvas.querySelector('.placeholder-text');
         if (placeholder) placeholder.remove();
         const blockElement = createBlockElement(data);
         targetContainer.appendChild(blockElement);
     }
+    // ★ 追加: グローバルスコープに公開
+    window.addEditorBlock = addEditorBlock;
     
     function addTemplateFolders(templateType) {
         const folderNames = TEMPLATES[templateType];
         if (!folderNames) return;
         folderNames.forEach(name => {
-            addBlock({ type: 'folder', name: name });
+            addEditorBlock({ type: 'folder', name: name }); // ★ 修正
         });
     }
 
@@ -460,7 +486,15 @@ document.addEventListener('DOMContentLoaded', () => {
             data.children = Array.from(childContainer.querySelectorAll(':scope > .component')).map(parseComponent).filter(Boolean);
         } else if (data.type === 'paper') {
             // (paper ノードは変更なし)
-        } else if (data.type === 'author') {
+        } 
+        // ★ 追加: author_group ケース
+        else if (data.type === 'author_group') {
+            data.name = titleInput ? titleInput.value : (titleH3 ? titleH3.textContent.trim() : '著者グループ');
+            const citationAmountSelect = element.querySelector('.data-citation-amount');
+            data.details.citationAmount = citationAmountSelect ? citationAmountSelect.value : 'normal';
+            // data.details.authors は dataset.detailsJson からロードされるため、ここでは不要
+        }
+        else if (data.type === 'author') {
             data.name = titleH3 ? titleH3.textContent.trim() : '不明な著者';
             const citationAmountSelect = element.querySelector('.data-citation-amount');
             data.details.citationAmount = citationAmountSelect ? citationAmountSelect.value : 'normal';
@@ -512,19 +546,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (dropTarget === canvas) {
-                        if (data.type !== 'paragraph' && data.type !== 'folder') {
-                            console.warn('最上位にはパラグラフまたはフォルダーのみ追加できます。');
+                        // ★ 修正: author_group もトップレベルに許可
+                        if (data.type !== 'paragraph' && data.type !== 'folder' && data.type !== 'author_group') {
+                            console.warn('最上位にはパラグラフ、フォルダー、または著者グループのみ追加できます。');
                             return;
                         }
                     }
                     else if (dropTarget.classList.contains('component-children-container')) {
-                         if (data.type === 'paragraph' || data.type === 'folder') {
-                             console.warn('パラグラフまたはフォルダーの内部には追加できません。');
+                         if (data.type === 'paragraph' || data.type === 'folder' || data.type === 'author_group') { // ★ 修正
+                             console.warn('パラグラフまたはフォルダー、著者グループの内部には追加できません。');
                              return;
                          }
                     }
                     
-                    addBlock(data, dropTarget);
+                    addEditorBlock(data, dropTarget); // ★ 修正
                     
                 } catch (error) { console.error('Failed to parse dropped data:', error); }
             }
@@ -613,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Control Buttons ---
     if (addParagraphBtn) {
         addParagraphBtn.addEventListener('click', () => {
-            addBlock({ type: 'paragraph', name: '新しいパラグラフ' });
+            addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' }); // ★ 修正
         });
     }
 
@@ -632,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 addTemplateFolders(templateTarget.dataset.templateType);
                 templateDropdownMenu.classList.add('hidden');
             } else if (singleFolderTarget) {
-                addBlock({ type: 'folder', name: '新しいフォルダー' });
+                addEditorBlock({ type: 'folder', name: '新しいフォルダー' }); // ★ 修正
                 templateDropdownMenu.classList.add('hidden');
             }
         });
@@ -721,13 +756,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         internalRelationships: internalRelationships,
                         citationAmount: node.details.citationAmount || 'normal' // ★ 追加
                     });
-                } else if (node.type === 'author') {
-                    collected.authors.push({
-                        name: node.name,
-                        coauthorCount: node.details.coauthorCount,
-                        mostFrequentTopic: node.details.mostFrequentTopic,
-                        coauthoredPapers: node.details.coauthoredPapers || [],
-                        citationAmount: node.details.citationAmount || 'normal' // ★ 追加
+                } 
+                // ★ 修正: author_group を author として収集
+                else if (node.type === 'author' || node.type === 'author_group') {
+                    
+                    // author_group の場合は、詳細の著者リストをループする
+                    const authorsToProcess = (node.type === 'author_group') 
+                        ? (node.details.authors || []) // {id, paper_count, ...} の配列
+                        : [
+                            { // author ノードの場合は、単一の要素を持つ配列を作成
+                                id: node.name.replace('著者: ', ''), // '著者: ' プレフィックスを削除
+                                paper_count: node.details.coauthorCount,
+                                // 'author' ノードには coauthoredPapers があるが、author_group にはない。
+                                // analyzer.py と visualization.js を再確認
+                                // -> visualization.js は author ノードに coauthoredPapersDetails を追加している
+                                // -> coauthor-network.js は coauthoredPapers を追加していない
+                                // -> この差を吸収する必要がある
+                                mostFrequentTopic: node.details.mostFrequentTopic,
+                                coauthoredPapers: node.details.coauthoredPapers || [], // 'author' ノードのみ
+                                citationAmount: node.details.citationAmount || 'normal'
+                            }
+                          ];
+
+                    authorsToProcess.forEach(authorData => {
+                        collected.authors.push({
+                            name: authorData.id || authorData.name, // 'id' または 'name' フィールドを使用
+                            coauthorCount: authorData.paper_count || authorData.coauthorCount,
+                            mostFrequentTopic: authorData.mostFrequentTopic,
+                            coauthoredPapers: authorData.coauthoredPapers || [], // 'author' ノードのみ
+                            citationAmount: authorData.citationAmount || 'normal' // ★ 追加
+                        });
                     });
                 }
                 
@@ -745,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return collected;
         }
 
+
         /**
          * パラグラフノード (folder または paragraph) 1つ分のプロンプトを生成する
          */
@@ -759,6 +818,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (paragraphNode.type === 'folder' && paragraphNode.memo) {
                  contextInfo += `### フォルダー全体のメモ ###\n"${paragraphNode.memo}"\n`;
             }
+            // ★ 追加: author_group のメモも収集
+            if (paragraphNode.type === 'author_group' && paragraphNode.memo) {
+                contextInfo += `### 著者グループ全体のメモ ###\n"${paragraphNode.memo}"\n`;
+            }
+
 
             let personaPrompt = '';
             switch (generationStyle) {
@@ -807,15 +871,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             // ★ 修正: トピックと著者の構成要素に citationAmount を追加
+            // ★ 修正: author_group の場合、internalData が空になるため、node.details.authors から直接著者リストを作成する
+            let authorNodeData;
+            if (paragraphNode.type === 'author_group') {
+                authorNodeData = (paragraphNode.details.authors || []).map(a => ({
+                    name: a.id,
+                    coauthorCount: a.paper_count,
+                    mostFrequentTopic: "N/A", // この情報は coauthor-network.js から渡されていない
+                    citationAmount: paragraphNode.details.citationAmount || 'normal',
+                    coauthoredPapers: [] // この情報も渡されていない
+                }));
+            } else {
+                authorNodeData = internalData.authors;
+            }
+
+
             const prompt = `
 ${personaPrompt}
 ${focusPrompt}
 
 ### 最重要タスク（厳守） ###
-提供される「パラグラフの既存本文（下書き）」または「フォルダー全体のメモ」は、ユーザーによる最も重要な指示です。
+提供される「パラグラフの既存本文（下書き）」または「フォルダー/グループ全体のメモ」は、ユーザーによる最も重要な指示です。
 あなたは、これらの指示を「構成要素」のデータよりも優先し、**必ず**反映させなければなりません。
 * 「既存本文（下書き）」がある場合：あなたのタスクは、この下書きを**リライト**し、構成要素の情報を追加して洗練させることです。下書きの意図を**絶対に**無視しないでください。
-* 「フォルダー全体のメモ」がある場合：あなたのタスクは、そのメモの指示（例：「○○を強調する」）を**実行**することです。
+* 「フォルダー/グループ全体のメモ」がある場合：あなたのタスクは、そのメモの指示（例：「○○を強調する」）を**実行**することです。
 * 「各構成要素の個別メモ」がある場合：そのメモは、特定の論文やトピックに言及する際の**必須**の指示です。
 
 ### メイン著者 ###
@@ -853,7 +932,7 @@ ${JSON.stringify(internalData.topics.map(t => ({
 })))}
 ---
 [著者ノード] (名前, 共著数, 主要トピック, 言及する論文数の希望, 全共著論文リスト(要旨,年)):
-${JSON.stringify(internalData.authors.map(a => ({
+${JSON.stringify(authorNodeData.map(a => ({ // ★ 修正: authorNodeData を使用
     name: a.name,
     coauthorCount: a.coauthorCount,
     mostFrequentTopic: a.mostFrequentTopic,
@@ -985,7 +1064,7 @@ ${JSON.stringify(internalData.memos)}
             
             try {
                 const generationTasks = structure
-                    .filter(node => node.type === 'paragraph' || node.type === 'folder')
+                    .filter(node => node.type === 'paragraph' || node.type === 'folder' || node.type === 'author_group') // ★ 修正
                     .map(paragraphNode => {
                         const prompt = createParagraphPrompt(paragraphNode, generationStyle, generationFocus); // ★ 修正: 引数を渡す
                         
@@ -1021,7 +1100,6 @@ ${JSON.stringify(internalData.memos)}
         generateSynthesisBtn.addEventListener('click', handleSynthesisGeneration);
     }
 
-    addBlock({ type: 'paragraph', name: '新しいパラグラフ' });
+    addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' }); // ★ 修正
 
 });
-

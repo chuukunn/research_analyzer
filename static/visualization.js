@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const svgMain = d3.select("#mainNet");
     const svgCitation = d3.select("#citationNet");
-    const svgCoauthor = d3.select("#coauthorNet");
+    const svgCoauthor = d3.select("#coauthor-container");
     const svgDendrogram = d3.select("#dendrogramNet");
     
     // BERTopicモデル選択の要素
@@ -557,6 +557,43 @@ document.addEventListener('DOMContentLoaded', () => {
         rerenderAll();
     }
 
+    // ★ 追加: 共著者ネットワークタブから「グループ追加」ボタンが押されたときのコールバック
+    const handleAuthorGroupAdd = (authorIds) => {
+        if (!currentData || !currentData.co_author_data || !currentData.co_author_data.nodes) {
+            console.warn("Cannot add author group: co_author_data is not ready.");
+            return;
+        }
+
+        const coAuthorNodeMap = new Map(currentData.co_author_data.nodes.map(n => [n.id, n]));
+        
+        // co_author_data から詳細情報を取得する
+        const authorDetails = authorIds
+            .map(id => coAuthorNodeMap.get(id))
+            .filter(Boolean) // 見つかったもののみ
+            .map(node => ({
+                id: node.id,
+                paper_count: node.paper_count,
+                start_year: node.start_year,
+                end_year: node.end_year
+                // analyzer.py の analyze_co_authorship が返す情報に基づき、
+                // 必要ならここに追加の統計情報 (mostFrequentTopicなど) を含める
+            }));
+
+        // document_editor.js に公開された関数を呼び出す
+        if (window.addEditorBlock) {
+            window.addEditorBlock({
+                type: 'author_group',
+                name: `著者グループ (${authorIds.length}名)`,
+                details: {
+                    authors: authorDetails // 著者IDと統計情報の配列
+                }
+            });
+        } else {
+            console.error("window.addEditorBlock is not defined. Make sure document_editor.js is loaded and exposes this function.");
+        }
+    };
+
+
     function onGroupClick(groupName, members) {
         // Clear previous selections and info panel content
         selectionState = { topics: new Set(), papers: new Set(), authors: new Set() };
@@ -639,8 +676,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeTab) return;
 
         const activeTabId = activeTab.id;
+        // ★ 修正: onAuthorGroupAdd を callbacks に追加
         const state = { selectionState, color };
-        const callbacks = { onNodeClick, onBackgroundClick, onTopicClick, onAuthorClick, onGroupClick, onInstitutionGroupClick };
+        const callbacks = { 
+            onNodeClick, 
+            onBackgroundClick, 
+            onTopicClick, 
+            onAuthorClick, 
+            onGroupClick, 
+            onInstitutionGroupClick,
+            onAuthorGroupAdd: handleAuthorGroupAdd // ★ 追加
+        };
 
         // --- Tab-specific visibility ---
         // Explicitly control visibility of elements tied to a specific tab.
@@ -662,6 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCitationNetwork(svgCitation, data, state, callbacks);
                 break;
             case 'coauthor-view':
+                // ★ 修正: callbacks を渡す
                 renderCoauthorTimeline(svgCoauthor, data, state, callbacks);
                 break;
             case 'synthesis-view':
@@ -699,4 +746,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // [修正点] ページ読み込み時の force_refetch を true から false に変更
     requestAnalysisFromServer(false);
 });
-
