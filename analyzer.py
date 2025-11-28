@@ -170,24 +170,37 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             # 3a. 分析対象の論文リストを作成
             docs, pids_with_abs, years = [], [], []
             
-            # ★ 修正点: 最小単語数を定義
-            MIN_ABSTRACT_WORDS = 50
+            # ★ 修正: 最小単語数を大幅に緩和し、タイトルによるフォールバックを実装
+            MIN_ABSTRACT_WORDS = 5
 
             for pid, p in papers.items():
-                # ★ 修正: and len(abs_text.split()) >= MIN_ABSTRACT_WORDS を追加
-                if (abs_text := (p.get("abstract") or "").strip()) and p.get("year") and len(abs_text.split()) >= MIN_ABSTRACT_WORDS:
-                    docs.append(abs_text)
+                abs_text = (p.get("abstract") or "").strip()
+                title_text = (p.get("title") or "").strip()
+                
+                text_to_use = ""
+                # アブストラクトがあり、かつ一定の長さがあればそれを使う
+                if abs_text and len(abs_text.split()) >= MIN_ABSTRACT_WORDS:
+                    text_to_use = abs_text
+                # アブストラクトがない、または短すぎる場合はタイトルを使う
+                elif title_text:
+                    text_to_use = title_text
+                
+                # テキストがあり、かつ出版年がある場合のみ分析対象にする
+                if text_to_use and p.get("year"):
+                    docs.append(text_to_use)
                     pids_with_abs.append(pid)
                     years.append(p["year"])
                 else:
-                    # フィルター（アブストラクトなし、年なし、または単語数不足）
+                    # フィルター（テキストなし、または年なし）
+                    # print(f"[analyzer] Dropping paper {pid}: No text or year.")
                     p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
+            
+            print(f"[analyzer] Processing {len(docs)} documents out of {len(papers)} total.")
             
             if not docs or len(docs) < params.get('n_neighbors', 15):
                 print("[analyzer] Not enough documents for analysis. Skipping.")
                 return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "timeline_data": timeline_data}
             
-            print(f"[analyzer] Found {len(docs)} documents with abstract (>= {MIN_ABSTRACT_WORDS} words) and year for analysis.")
             
             # 3b. 論文ごとキャッシュを確認し、ベクトル化が必要なリストを作成
             content_vectors_map = {}
@@ -255,41 +268,34 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
     clusterer_model = params['clustering_model'].lower()
     dendrogram_tree = None
 
-    # HDBSCANのmin_cluster_sizeを固定値に設定。これによりkを変更してもデンドログラムの構造が安定する。
-    HDBSCAN_MIN_CLUSTER_SIZE = 5
-
     if clusterer_model == 'hdbscan':
-        # デンドログラム生成用に、固定パラメータでHDBSCANを一度実行する
-        hdbscan_clusterer_for_dendrogram = hdbscan.HDBSCAN(
-            min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE, 
+        # ★ 修正: ユーザー指定の k を min_cluster_size として使用する
+        # 以前は HDBSCAN_flat を使用し、n_clusters=params['k'] としてクラスター数を指定していたが、
+        # UI上の「最小クラスターサイズ」の意図に合わせるため、通常の HDBSCAN を min_cluster_size 指定で使用する。
+        
+        min_cluster_size = int(params['k'])
+        print(f"[analyzer] Running HDBSCAN with min_cluster_size={min_cluster_size}")
+
+        hdbscan_clusterer = hdbscan.HDBSCAN(
+            min_cluster_size=min_cluster_size, 
             min_samples=1, 
             gen_min_span_tree=True
         )
-        hdbscan_clusterer_for_dendrogram.fit(reduced_10d)
+        topics = hdbscan_clusterer.fit_predict(reduced_10d)
         
+        # デンドログラムデータの構築
         try:
-            # ユーザー指定のクラスタ数 'k' でフラットなクラスタリングを実行する
-            flat_clusterer = HDBSCAN_flat(
-                reduced_10d, 
-                n_clusters=params['k'], 
-                min_cluster_size=HDBSCAN_MIN_CLUSTER_SIZE
-            )
-            topics = flat_clusterer.labels_
+            linkage_matrix = hdbscan_clusterer.single_linkage_tree_.to_numpy()
+            def build_tree(node, linkage, n_samples):
+                if node.is_leaf(): return {"name": f"doc_{node.id}", "size": 1}
+                distance = linkage[node.id - n_samples][2] if (node.id - n_samples) < len(linkage) else 0
+                return {"name": f"node_{node.id}", "distance": distance, "children": [build_tree(node.get_left(), linkage, n_samples), build_tree(node.get_right(), linkage, n_samples)]}
+            n_samples = len(docs)
+            root_node = to_tree(linkage_matrix, rd=True)
+            dendrogram_tree = build_tree(root_node[0], linkage_matrix, n_samples) if root_node else None
         except Exception as e:
-            print(f"[analyzer] HDBSCAN_flat clustering failed with k={params['k']}. Error: {e}")
-            print(f"[analyzer] Falling back to default HDBSCAN clustering result.")
-            # flat clustering が失敗した場合は、デンドログラム生成に使ったインスタンスの結果をフォールバックとして使用
-            topics = hdbscan_clusterer_for_dendrogram.labels_
-        
-        # デンドログラムデータは、固定パラメータで実行したインスタンスから生成
-        linkage_matrix = hdbscan_clusterer_for_dendrogram.single_linkage_tree_.to_numpy()
-        def build_tree(node, linkage, n_samples):
-            if node.is_leaf(): return {"name": f"doc_{node.id}", "size": 1}
-            distance = linkage[node.id - n_samples][2] if (node.id - n_samples) < len(linkage) else 0
-            return {"name": f"node_{node.id}", "distance": distance, "children": [build_tree(node.get_left(), linkage, n_samples), build_tree(node.get_right(), linkage, n_samples)]}
-        n_samples = len(docs)
-        root_node = to_tree(linkage_matrix, rd=True)
-        dendrogram_tree = build_tree(root_node[0], linkage_matrix, n_samples) if root_node else None
+            print(f"[analyzer] Warning: Failed to generate dendrogram: {e}")
+            dendrogram_tree = None
 
     elif clusterer_model == 'kmeans':
         # params['k'] には、UIから指定されたk-means用のkの値が入っている
@@ -297,7 +303,8 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         topics = kmeans_clusterer.fit_predict(reduced_10d)
         # K-Meansは階層的ではないため、デンドログラムは生成しない
         dendrogram_tree = None
-    else: # デフォルトはHDBSCAN（UIからの選択肢外）
+    else: 
+        # フォールバック（本来ここには来ないはずだが、念のため min_cluster_size として扱う）
         hdbscan_clusterer = hdbscan.HDBSCAN(min_cluster_size=params['k'], min_samples=1, gen_min_span_tree=False)
         topics = hdbscan_clusterer.fit_predict(reduced_10d)
         dendrogram_tree = None
@@ -362,4 +369,3 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
         "co_author_data": co_author_data,
         "timeline_data": timeline_data
     }
-

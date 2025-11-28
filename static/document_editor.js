@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const collapseIconOpen = document.getElementById('collapse-icon-open');
     const collapseIconClosed = document.getElementById('collapse-icon-closed');
 
-    // --- Synthesis Elements (Moved from visualization.js) ---
+    // --- Synthesis Elements ---
     const generateSynthesisBtn = document.getElementById('generate-synthesis-btn');
     const synthesisOutput = document.getElementById('synthesis-output');
 
@@ -26,21 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
         C: ['導入', '背景と着想', '理論の構築と展開', '応用と影響', '総括']
     };
 
-    // --- Utility Functions (unchanged) ---
+    // --- Utility Functions ---
 
     function autoResizeTextarea() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
     }
 
-    // --- ★ 修正: 年代分布棒グラフの関数を再導入 (クリック機能なしの純粋な可視化として) ---
     function createYearDistChart(container, yearData) {
         if (!yearData || yearData.length === 0) {
             container.innerHTML = "<p class='text-xs text-slate-500 p-2'>年代分布データがありません。</p>";
             return;
         };
-
-        const margin = {top: 10, right: 10, bottom: 35, left: 30};
+        
+        const margin = {top: 10, right: 10, bottom: 20, left: 30};
         const containerRect = container.getBoundingClientRect();
         // コンテナの高さを使用 (デフォルト100px)
         const effectiveHeight = containerRect.height > 0 ? containerRect.height : 100; 
@@ -48,9 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const height = effectiveHeight - margin.top - margin.bottom;
 
         if (width <= 0 || height <= 0) return; // コンテナが非表示の場合は描画しない
-        
-        d3.select(container).html('');
-        
+
+        container.innerHTML = '';
         const svg = d3.select(container).append("svg")
             .attr("width", "100%")
             .attr("height", "100%")
@@ -69,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
            .attr("dx", "-.8em")
            .attr("dy", ".15em")
            .attr("transform", "rotate(-65)")
-           .style("font-size", "10px"); // フォントサイズを小さく指定
+           .style("font-size", "10px");
 
         svg.append("g").call(d3.axisLeft(y).ticks(Math.min(3, d3.max(yearData, d => d[1]))))
            .style("font-size", "10px");
@@ -83,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("y", d => y(d[1]))
             .attr("width", x.bandwidth())
             .attr("height", d => height - y(d[1]))
-            .attr("fill", '#6366f1') // 標準色
+            .attr("fill", '#6366f1')
             .append("title").text(d => `${d[0]}年: ${d[1]}件`);
     }
 
@@ -94,12 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return abstractText.replace(regex, '<strong>$1</strong>');
     }
 
-    // --- ★ 新規追加: 論文ノード用のミニ引用グラフ描画関数 ---
-    /**
-     * 論文ブロック内に小さな引用グラフを描画する
-     * @param {HTMLElement} container - グラフを描画するDIV要素
-     * @param {string} paperId - 中止となる論文のID
-     */
+    // --- ★ 論文ノード用のミニ引用グラフ描画関数 ---
     function renderMiniCitationGraph(container, paperId) {
         const vizData = window.currentVisualizationData;
         if (!vizData || !vizData.nodes || !vizData.edges) {
@@ -161,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (d.type === 'main') return width / 2;
                 if (d.type === 'referenced') return width * 0.2; // 左側
                 return width * 0.8; // 右側
-            }).strength(0.5)) // X位置への引力を強めに
+            }).strength(0.5))
             .force("y", d3.forceY(height / 2).strength(0.1));
 
         // 4. 描画
@@ -251,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodyHtml = `<div class="component-memo p-2 border-t border-slate-200 bg-slate-100"><textarea class="prose-textarea auto-resize-textarea data-memo-input" placeholder="このフォルダーに関するメモ..."></textarea></div>
                             <div class="component-children-container min-h-[40px] bg-slate-50 p-2 rounded-b-md border-t"></div>`;
                 break;
-            // ★ 追加: author_group ケース
             case 'author_group':
                 headerHtml = `<input type="text" class="font-semibold text-sm bg-transparent focus:bg-white focus:ring-1 focus:ring-indigo-500 rounded p-1 w-full" value="${data.name || '著者グループ'}">`;
                 const authorsList = (data.details.authors || [])
@@ -260,9 +252,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     )
                     .join('');
                 
+                // ★ 年代情報の表示
+                let yearInfoHtml = '';
+                if (data.details.timelineData && data.details.timelineData.length > 0) {
+                    const years = data.details.timelineData.map(p => p.year);
+                    const minYear = Math.min(...years);
+                    const maxYear = Math.max(...years);
+                    yearInfoHtml = `<p class="text-xs text-indigo-600 font-bold mt-1">活動期間: ${minYear}年 - ${maxYear}年 (共著 ${data.details.timelineData.length}件)</p>`;
+                }
+                
                 const authorGroupBody = `<div class="prose prose-sm max-w-none">
                                         <p><strong>グループ構成員 (${data.details.authors ? data.details.authors.length : 0}名):</strong></p>
-                                        <ul class="list-disc list-inside">${authorsList}</ul>
+                                        <ul class="list-disc list-inside h-20 overflow-y-auto">${authorsList}</ul>
+                                        ${yearInfoHtml}
+                                        <div class="year-dist-chart h-16 w-full mt-2 bg-slate-100 rounded"></div>
                                         <div class="mt-2">
                                             <label class="text-xs font-medium text-slate-700">言及する論文数:</label>
                                             <select class="data-citation-amount text-xs p-1 border-slate-300 rounded-md">
@@ -337,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'paper':
                 headerHtml = `<h3 class="font-semibold text-sm truncate pr-2 hover:text-indigo-600 hover:underline cursor-pointer" title="${data.details.title}" data-paper-id="${data.details.paper_id}">${data.details.title}</h3>`;
                 const highlightedAbstract = highlightKeywords(data.details.abstract, data.details.keywords);
-                // ★ 修正: ミニ引用グラフ用のHTMLを追加
                 const paperBody = `<div class="prose prose-sm max-w-none">
                                         <p><em>Authors: ${data.details.authors.join(', ')}</em> (${data.details.year})</p><hr>
                                         <p><strong>Abstract (キーワード強調):</strong></p>
@@ -353,6 +355,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         component.innerHTML = `<div class="component-content"><div class="component-header">${headerHtml}${controlsHtml}</div>${bodyHtml}</div>`;
+
+        // チャート描画 (author_group用)
+        if (data.type === 'author_group' && data.details.timelineData) {
+            const chartDiv = component.querySelector('.year-dist-chart');
+            // 年代分布データを作成: [[year, count], ...]
+            const yearCounts = d3.rollup(data.details.timelineData, v => v.length, d => d.year);
+            const yearData = Array.from(yearCounts).sort((a,b) => a[0] - b[0]);
+            createYearDistChart(chartDiv, yearData);
+        }
 
         if (data.type === 'topic') {
             const chartContainer = component.querySelector('.year-chart-container');
@@ -410,11 +421,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // ★ 修正: 論文ノードの場合、ミニ引用グラフを描画
+        // 論文ノードの場合、ミニ引用グラフを描画
         if (data.type === 'paper') {
             const miniGraphContainer = component.querySelector('.mini-citation-graph');
             if (miniGraphContainer) {
-                // 描画関数はファイルスコープで（この関数の前または後に）定義されている必要がある
                 renderMiniCitationGraph(miniGraphContainer, data.details.paper_id);
             }
         }
@@ -445,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const folderNames = TEMPLATES[templateType];
         if (!folderNames) return;
         folderNames.forEach(name => {
-            addEditorBlock({ type: 'folder', name: name }); // ★ 修正
+            addEditorBlock({ type: 'folder', name: name });
         });
     }
 
@@ -487,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (data.type === 'paper') {
             // (paper ノードは変更なし)
         } 
-        // ★ 追加: author_group ケース
         else if (data.type === 'author_group') {
             data.name = titleInput ? titleInput.value : (titleH3 ? titleH3.textContent.trim() : '著者グループ');
             const citationAmountSelect = element.querySelector('.data-citation-amount');
@@ -553,13 +562,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     else if (dropTarget.classList.contains('component-children-container')) {
-                         if (data.type === 'paragraph' || data.type === 'folder' || data.type === 'author_group') { // ★ 修正
+                         if (data.type === 'paragraph' || data.type === 'folder' || data.type === 'author_group') {
                              console.warn('パラグラフまたはフォルダー、著者グループの内部には追加できません。');
                              return;
                          }
                     }
                     
-                    addEditorBlock(data, dropTarget); // ★ 修正
+                    addEditorBlock(data, dropTarget);
                     
                 } catch (error) { console.error('Failed to parse dropped data:', error); }
             }
@@ -648,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Control Buttons ---
     if (addParagraphBtn) {
         addParagraphBtn.addEventListener('click', () => {
-            addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' }); // ★ 修正
+            addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' });
         });
     }
 
@@ -667,7 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 addTemplateFolders(templateTarget.dataset.templateType);
                 templateDropdownMenu.classList.add('hidden');
             } else if (singleFolderTarget) {
-                addEditorBlock({ type: 'folder', name: '新しいフォルダー' }); // ★ 修正
+                addEditorBlock({ type: 'folder', name: '新しいフォルダー' });
                 templateDropdownMenu.classList.add('hidden');
             }
         });
@@ -722,8 +731,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: node.details.title,
                         abstract: node.details.abstract,
                         year: node.details.year,
-                        authors: node.details.authors, // ★ 要望2: 既存
-                        authorships: node.details.authorships || [], // ★ 要望2: 新規追加
+                        authors: node.details.authors,
+                        authorships: node.details.authorships || [],
                         pdf_url: node.details.pdf_url || "",
                         references: references,
                         citedBy: citedBy
@@ -755,39 +764,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         allPapersInTopic: node.details.allPapersInTopic || [],
                         selectedRange: node.details.selectedRange || null,
                         internalRelationships: internalRelationships,
-                        citationAmount: node.details.citationAmount || 'normal' // ★ 追加
+                        citationAmount: node.details.citationAmount || 'normal'
                     });
                 } 
-                // ★ 修正: author_group を author として収集
                 else if (node.type === 'author' || node.type === 'author_group') {
                     
                     if (node.type === 'author_group') {
                         // --- グループの場合の処理 ---
+                        // ★ 修正: timelineData (共著論文データ) を直接利用
+                        const commonPapers = node.details.timelineData || [];
                         const authorIdsInGroup = (node.details.authors || []).map(a => a.id);
-                        let commonPapers = [];
-
-                        if (authorIdsInGroup.length > 0 && allNodesMap.size > 0) {
-                            allNodesMap.forEach(paper => { // 全論文をチェック
-                                const paperAuthors = new Set(paper.authors || []);
-                                const allInGroupAreAuthors = authorIdsInGroup.every(authorId => paperAuthors.has(authorId));
-                                
-                                if (allInGroupAreAuthors) {
-                                    commonPapers.push({
-                                        title: paper.title,
-                                        abstract: paper.abstract,
-                                        year: paper.year,
-                                        authors: paper.authors
-                                    });
-                                }
-                            });
-                        }
                         
                         // collected.authors にグループ情報を追加
                         collected.authors.push({
-                            name: node.name, // "著者グループ (X名)"
-                            isGroup: true, // ★ グループであることを明記
+                            name: node.name,
+                            isGroup: true,
                             groupMembers: authorIdsInGroup,
-                            commonPapers: commonPapers, // ★ 要望2: 共通論文リスト
+                            commonPapers: commonPapers.map(p => ({
+                                title: p.title,
+                                year: p.year,
+                                abstract: p.abstract || "要約なし"
+                            })),
+                            // ★ 年代範囲の情報をメタデータとして追加
+                            period: commonPapers.length > 0 
+                                ? `${Math.min(...commonPapers.map(p=>p.year))} - ${Math.max(...commonPapers.map(p=>p.year))}`
+                                : "不明",
                             citationAmount: node.details.citationAmount || 'normal'
                         });
 
@@ -802,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                         collected.authors.push({
                             name: authorData.id,
-                            isGroup: false, // ★ グループではない
+                            isGroup: false,
                             coauthorCount: authorData.paper_count,
                             mostFrequentTopic: authorData.mostFrequentTopic,
                             coauthoredPapers: authorData.coauthoredPapers,
@@ -814,12 +815,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (node.memo) {
                     collected.memos.push(node.memo);
                 }
+                // 再帰的に子要素を収集
+                if (node.children) {
+                    const childData = collectData(node.children);
+                    collected.papers.push(...childData.papers);
+                    collected.topics.push(...childData.topics);
+                    collected.authors.push(...childData.authors);
+                    collected.memos.push(...childData.memos);
+                    collected.relationships.push(...childData.relationships);
+                }
             });
 
             if (allEdges.length > 0) {
-                collected.relationships = allEdges.filter(edge => 
+                collected.relationships.push(...allEdges.filter(edge => 
                     paperIdsInNode.has(edge.source) && paperIdsInNode.has(edge.target)
-                );
+                ));
             }
 
             return collected;
@@ -829,8 +839,14 @@ document.addEventListener('DOMContentLoaded', () => {
         /**
          * パラグラフノード (folder または paragraph) 1つ分のプロンプトを生成する
          */
-        function createParagraphPrompt(paragraphNode, generationStyle, generationFocus) { // ★ 修正: generationFocus を追加
+        function createParagraphPrompt(paragraphNode, generationStyle, generationFocus) {
             const internalData = collectData(paragraphNode.children || []);
+            // author_group自身がトップレベルの場合、そのデータを追加
+            if (paragraphNode.type === 'author_group') {
+                const selfData = collectData([paragraphNode]);
+                internalData.authors.push(...selfData.authors);
+            }
+
             const mainAuthorName = window.currentVisualizationData ? window.currentVisualizationData.main_author_name : "当該研究者";
             
             let contextInfo = '';
@@ -892,7 +908,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
 
-            // ★ 修正: internalData.authors をそのまま使用
             const prompt = `
 ${personaPrompt}
 ${focusPrompt}
@@ -920,7 +935,7 @@ ${JSON.stringify(internalData.papers.map(p => ({
     year: p.year, 
     abstract: p.abstract,
     pdf_url: p.pdf_url,
-    authorships: (p.authorships || []).map(a => ({ name: a.name, position: a.position })), // ★ 要望2: 修正
+    authorships: (p.authorships || []).map(a => ({ name: a.name, position: a.position })),
     references: p.references.map(r => r.title),
     citedBy: p.citedBy.map(c => c.title)
 })))}
@@ -929,7 +944,7 @@ ${JSON.stringify(internalData.papers.map(p => ({
 ${JSON.stringify(internalData.topics.map(t => ({ 
     focusKeywords: t.focusKeywords,
     selectedRange: t.selectedRange,
-    citationAmount: t.citationAmount, // ★ 追加
+    citationAmount: t.citationAmount,
     allPapersInTopic: t.allPapersInTopic.map(p => ({
         title: p.title,
         abstract: p.abstract,
@@ -946,7 +961,8 @@ ${JSON.stringify(internalData.authors.map(a => {
             name: a.name,
             isGroup: true,
             groupMembers: a.groupMembers,
-            commonPapers: a.commonPapers.map(p => ({ // ★ 要望2: 共通論文
+            period: a.period, // ★ 活動期間
+            commonPapers: a.commonPapers.map(p => ({ // ★ 共通論文 (時系列)
                 title: p.title,
                 abstract: p.abstract,
                 year: p.year
@@ -979,7 +995,7 @@ ${JSON.stringify(internalData.memos)}
 ### 補助的な指示 ###
 1.  **優先順位（★最重要）:** もしこのパラグラフ内に[論文ノード]と[トピックノード]が**両方**含まれている場合、あなたは[論文ノード]で指定された個別の論文（およびその引用関係）を議論の**中心**に据えなければなりません。[トピックノード]の情報（\`allPapersInTopic\`や\`internalRelationships\`）は、それらの中心的な論文の背景、文脈、またはそのトピック全体における位置づけを説明するために**補足的**に使用してください。話が重複しないよう、論文ノードの情報を優先してください。
 2.  **論理構成:** まず、このパラグラフに含まれる論文全体の「研究背景」や「問題点」を（各論文の要旨やトピック情報から抽出し）冒頭にまとめて提示してください。その後、時系列や論理の流れ（例えば、アプローチ、結果、考察）に沿って、各論文の貢献を説明してください。単なる情報の羅列を避け、自然な流れになるように接続詞（「しかし」「そのため」「さらに」など）を適切に使用してください。
-3.  **時系列と焦点:** \`記述の焦点（Focus）\` の指示（タイムライン重視 vs 設計/特徴重視）に従ってください。
+3.  **時系列と焦点:** \`記述の焦点（Focus）\` の指示（タイムライン重視 vs 設計/特徴重視）に従ってください。特に「著者・著者グループノード」に「活動期間」や「共著論文（時系列）」が含まれる場合は、その年代情報を文脈に反映させてください。（例：「2000年代初頭に集中的に共同研究を行い…」）
 4.  **著者中心:** ${mainAuthorName} が（または ${mainAuthorName} を中心とするチームが）何を行ったのか、という視点を明確にしてください。[論文ノード]の \`authorships\` リストを参照し、${mainAuthorName} がその論文でどのような役割（例：'first'（筆頭著者）、'last'（責任著者）、'middle'（共著者））を果たしたかを特定し、記述に反映させてください。（例：${mainAuthorName} が筆頭著者として発表した[論文X]では...）
 5.  **著者情報の反映:** 「構成要素」に『著者・著者グループノード』が含まれている場合、その指示に従ってください。
     * **個別著者:** その著者（${mainAuthorName} の共著者）がどのような共同研究（名前、共著論文数、主要トピック、共著論文リスト）を行ったかについて、本文中に具体的に組み込んでください。
@@ -1009,9 +1025,9 @@ ${JSON.stringify(internalData.memos)}
                     .replace(/^## (.*$)/gim, '<h3 class="font-semibold text-base mt-3 mb-1">$1</h3>')
                     .replace(/^# (.*$)/gim, '<h2 class="font-semibold text-lg mt-4 mb-2">$1</h2>')
                     .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
-                    .replace(/\n/g, '<br />'); // ★ 要望1: この行が改行を <br> に変換します
+                    .replace(/\n/g, '<br />');
 
-                // ★ 要望1: リンク生成ロジックの改善
+                // リンク生成ロジック
                 formattedText = formattedText.replace(
                     /\[論文: "([^"]+)"(?:\s\(([^)]+)\))?\]/g,
                     (match, title, parenthesesContent) => {
@@ -1067,7 +1083,6 @@ ${JSON.stringify(internalData.memos)}
                                         <span class="paper-link text-xs text-slate-500 hover:underline cursor-pointer ml-1" data-paper-id="${paperId}" title="クリックして左の分析ビューで選択">[分析ビュー]</span>`;
                             }
                         } else {
-                            // ★ 修正: リンクが見つからない場合は赤色で表示
                             console.warn(`Could not find paper for: "${title}"`);
                             return `<span class="text-red-600" title="分析データ内に該当する論文が見つかりませんでした">${title}</span>`;
                         }
@@ -1103,11 +1118,11 @@ ${JSON.stringify(internalData.memos)}
                 return;
             }
 
-            // ★ 修正: スタイルと焦点（Focus）を取得
+            // スタイルと焦点（Focus）を取得
             const styleSelect = document.getElementById('generation-style-select');
             const focusSelect = document.getElementById('generation-focus-select');
             const generationStyle = styleSelect ? styleSelect.value : 'academic_expert';
-            const generationFocus = focusSelect ? focusSelect.value : 'timeline'; // ★ 追加
+            const generationFocus = focusSelect ? focusSelect.value : 'timeline';
 
             synthesisOutput.innerHTML = '<p class="text-slate-500">各パラグラフの文章を並列で生成し、統合しています...</p>';
             
@@ -1149,6 +1164,6 @@ ${JSON.stringify(internalData.memos)}
         generateSynthesisBtn.addEventListener('click', handleSynthesisGeneration);
     }
 
-    addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' }); // ★ 修正
+    addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' });
 
 });

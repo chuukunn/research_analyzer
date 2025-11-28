@@ -41,11 +41,12 @@ def data():
         "max_papers": request.args.get("max_papers", type=int, default=200),
     }
     
-    # ユーザーがk-meansを選択した場合、そのkの値を使用する。それ以外はHDBSCANのkを使用。
+    # クラスタリングモデルの取得
     clustering_model = request.args.get("clustering_model", "hdbscan")
+    
+    # ★ 修正: kの値の取得ロジックを簡素化
+    # フロントエンドがモデルに関わらず 'k' パラメータで正しい値を送ってくることを前提とする
     k_value = request.args.get("k", type=int, default=8)
-    if clustering_model == 'kmeans':
-        k_value = request.args.get("kmeans_k", type=int, default=8)
 
     analysis_params = {
         "k": k_value,
@@ -213,4 +214,3 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
-

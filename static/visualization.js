@@ -69,15 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const svgMain = d3.select("#mainNet");
     const svgCitation = d3.select("#citationNet");
     const svgCoauthor = d3.select("#coauthor-container");
-    const svgDendrogram = d3.select("#dendrogramNet");
+    const svgDendrogram = d3.select("#dendrogramNet"); 
     
     // BERTopicモデル選択の要素
     const embeddingModelSelect = document.getElementById('embeddingModelSelect');
     const dimRedModelSelect = document.getElementById('dimRedModelSelect');
     const clusteringModelSelect = document.getElementById('clusteringModelSelect');
-    const dendrogramTabButton = document.getElementById('dendrogram-tab-button');
-    const dendrogramContent = document.getElementById('dendrogram-content');
-
 
     const createSlider = (container, id, displayId, start, min, max, step, format, changeCallback) => {
         const slider = container.querySelector(`#${id}`);
@@ -136,15 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
         reclusterCallback();
     });
 
+    const kmeansKInput = document.getElementById('kmeansKInput'); // K-Means/HDBSCAN共用の入力
+    const clusterParamLabel = document.getElementById('cluster-param-label'); // ラベル
+
     clusteringModelSelect.addEventListener('change', () => {
-        // HDBSCANが選択されている場合のみデンドログラムエリアを表示
-        const isHdbscan = clusteringModelSelect.value === 'hdbscan';
-        const dendrogramWrapper = document.getElementById('dendrogram-content');
-        const hrSeparator = dendrogramWrapper ? dendrogramWrapper.previousElementSibling : null;
-
-        if (dendrogramWrapper) dendrogramWrapper.style.display = isHdbscan ? '' : 'none';
-        if (hrSeparator && hrSeparator.tagName === 'HR') hrSeparator.style.display = isHdbscan ? '' : 'none';
-
+        // ★ 修正: クラスタリングモデルに応じてラベルとデフォルト値を切り替え
+        if (clusteringModelSelect.value === 'hdbscan') {
+            clusterParamLabel.textContent = '最小クラスターサイズ (Min Cluster Size)';
+            kmeansKInput.value = 5; // HDBScanのデフォルト
+        } else {
+            clusterParamLabel.textContent = 'ターゲットクラスター数 (k)';
+            kmeansKInput.value = 8; // KMeansのデフォルト
+        }
         reclusterCallback();
     });
 
@@ -165,21 +165,14 @@ document.addEventListener('DOMContentLoaded', () => {
             rerenderAll();
         });
     });
-
-    // --- Control Panelのタブ切り替えロジックはレイアウト変更により不要になったため削除 ---
     
     // --- データ取得と描画 ---
     if(refetchAndAnalyzeButton) refetchAndAnalyzeButton.addEventListener('click', () => requestAnalysisFromServer(true, false));
     if(reanalyzeButton) reanalyzeButton.addEventListener('click', () => requestAnalysisFromServer(false, true));
     
-    // kの値を変更したら、再分析を促す
-    const kInput = document.getElementById('k');
-    if (kInput) {
-        kInput.addEventListener('change', () => {
-            // HDBSCANが選択されている場合のみ再クラスターを実行
-            if(clusteringModelSelect.value === 'hdbscan') {
-                requestAnalysisFromServer(false, true);
-            }
+    if (kmeansKInput) {
+        kmeansKInput.addEventListener('change', () => {
+             requestAnalysisFromServer(false, true);
         });
     }
 
@@ -188,9 +181,16 @@ document.addEventListener('DOMContentLoaded', () => {
             $infoPanel.innerHTML = "エラー: UIコンポーネントの初期化に失敗しました。";
             return;
         }
+
+        // 入力欄の値を取得 (HDBScanの場合は min_cluster_size として扱われる)
+        let currentK = 8;
+        if (kmeansKInput) {
+            currentK = +kmeansKInput.value;
+        }
+
         const params = {
             aid: document.getElementById('aid').value.trim(),
-            k: +document.getElementById('k').value,
+            k: currentK, // 選択された値を送信
             max_papers: +document.getElementById('max_papers').value,
             time_weight: +timeWeightSlider.get(),
             n_neighbors: +neighborsSlider.get(),
@@ -225,7 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.error) { throw new Error(response.error); }
             
             currentData = response;
-            // 修正点: document_editor.js から参照できるようにグローバルスコープにデータを格納
             window.currentVisualizationData = currentData; 
 
             if (!reclusterOnly || forceRefetchPaperData) {
@@ -238,11 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (topicCountDisplay) {
                 topicCountDisplay.textContent = numTopics;
             }
-             // K-Meansの場合、kの値を更新する
-            if (params.clustering_model === 'kmeans' && kInput) {
-                kInput.value = numTopics;
-            }
-
 
             const colorScheme = [];
             if (numTopics > 0) {
@@ -258,21 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .range(colorScheme)
                 .unknown("#ccc");
             
-            // Dendrogramの表示/非表示をデータに基づいて更新
-            const isHdbscan = clusteringModelSelect.value === 'hdbscan' && currentData.dendrogram_data;
-            const dendrogramWrapper = document.getElementById('dendrogram-content');
-            const hrSeparator = dendrogramWrapper ? dendrogramWrapper.previousElementSibling : null;
+            if (svgDendrogram) svgDendrogram.selectAll("*").remove();
 
-            if (dendrogramWrapper) dendrogramWrapper.style.display = isHdbscan ? '' : 'none';
-            if (hrSeparator && hrSeparator.tagName === 'HR') hrSeparator.style.display = isHdbscan ? '' : 'none';
-            
             rerenderAll();
-            
-            if (isHdbscan) {
-                renderDendrogram(svgDendrogram, currentData, { selectionState, color }, { reclusterCallback });
-            } else {
-                svgDendrogram.selectAll("*").remove();
-            }
             
             $infoPanel.innerHTML = '分析完了。論文を選択してください。';
         } catch (error) {
@@ -415,7 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 : null;
             const mostFrequentTopicKeywords = mostFrequentTopic ? mostFrequentTopic.Keywords : 'N/A';
     
-            // [修正点 3] 著者ノードにすべての共著論文のアブストラクトと発行年を追加
             const coauthoredPapersDetails = authorPapers.map(p => ({
                 title: p.title,
                 abstract: p.abstract,
@@ -425,11 +406,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = { 
                 type: 'author', 
                 name: `著者: ${author}`,
-                stats: { // 既存の統計データ
+                stats: {
                     coauthorCount: coauthorCount,
                     mostFrequentTopic: mostFrequentTopicKeywords
                 },
-                details: { // [修正点 3] 詳細な論文リストを追加
+                details: {
                     coauthoredPapers: coauthoredPapersDetails
                 }
             };
@@ -443,7 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const topCitedPapers = topicPapers.sort((a, b) => b.cit_cnt - a.cit_cnt).slice(0, 3);
                 const yearDistribution = d3.rollup(topicPapers.filter(p => p.year > 0), v => v.length, d => d.year);
     
-                // [修正点 2] トピックノードに属するすべての論文のアブストラクト、引用数、発行年を追加
                 const allPapersInTopicDetails = topicPapers.map(p => ({
                     title: p.title,
                     abstract: p.abstract,
@@ -456,12 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     type: 'topic', 
                     name: topicName,
                     details: {
-                        keywords: topic.Keywords, // 概要キーワード (コンマ区切り)
+                        keywords: topic.Keywords,
                         topCitedPapers: topCitedPapers.map(p => ({ title: p.title, year: p.year, cit_cnt: p.cit_cnt })),
                         yearDistribution: Array.from(yearDistribution.entries()).sort((a,b) => a[0] - b[0]),
-                        // 'AllKeywords' は analyzer.py から topic_info に含まれている想定
-                        
-                        // [修正点 2] 追加
                         allPapersInTopic: allPapersInTopicDetails
                     }
                 };
@@ -472,8 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
         papers.forEach(paperId => {
             const paper = data.nodes.find(p => p.paper_id === paperId);
             if (paper) {
-                // 修正点: 論文が持つキーワードリストを渡す (analyzer.py が 'keywords' を返している場合)
-                // もし analyzer.py が論文ごとのキーワードを返していない場合、フォールバックが必要
                 const paperKeywords = paper.keywords || (currentData.keyword_coords ? Object.keys(currentData.keyword_coords) : []);
                 
                 const paperName = `論文: ${paper.title}`;
@@ -484,12 +459,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         paper_id: paper.paper_id,
                         title: paper.title,
                         year: paper.year,
-                        authors: paper.authors, // ★ 要望2: 後方互換性のため残す
-                        authorships: paper.authorships || [], // ★ 要望2: 筆頭著者情報
+                        authors: paper.authors,
                         abstract: paper.abstract,
-                        keywords: paperKeywords, // 論文固有のキーワード
-                        
-                        // [修正点 1] PDF URL を追加 (data_fetcher.py で追加された想定)
+                        keywords: paperKeywords,
                         pdf_url: paper.pdf_url || "" 
                     }
                 };
@@ -558,7 +530,6 @@ document.addEventListener('DOMContentLoaded', () => {
         rerenderAll();
     }
 
-    // ★ 追加: 共著者ネットワークタブから「グループ追加」ボタンが押されたときのコールバック
     const handleAuthorGroupAdd = (authorIds) => {
         if (!currentData || !currentData.co_author_data || !currentData.co_author_data.nodes) {
             console.warn("Cannot add author group: co_author_data is not ready.");
@@ -567,61 +538,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const coAuthorNodeMap = new Map(currentData.co_author_data.nodes.map(n => [n.id, n]));
         
-        // co_author_data から詳細情報を取得する
         const authorDetails = authorIds
             .map(id => coAuthorNodeMap.get(id))
-            .filter(Boolean) // 見つかったもののみ
+            .filter(Boolean)
             .map(node => ({
                 id: node.id,
                 paper_count: node.paper_count,
                 start_year: node.start_year,
                 end_year: node.end_year
-                // analyzer.py の analyze_co_authorship が返す情報に基づき、
-                // 必要ならここに追加の統計情報 (mostFrequentTopicなど) を含める
             }));
 
-        // document_editor.js に公開された関数を呼び出す
         if (window.addEditorBlock) {
             window.addEditorBlock({
                 type: 'author_group',
                 name: `著者グループ (${authorIds.length}名)`,
                 details: {
-                    authors: authorDetails // 著者IDと統計情報の配列
+                    authors: authorDetails
                 }
             });
-        } else {
-            console.error("window.addEditorBlock is not defined. Make sure document_editor.js is loaded and exposes this function.");
         }
     };
 
 
     function onGroupClick(groupName, members) {
-        // Clear previous selections and info panel content
         selectionState = { topics: new Set(), papers: new Set(), authors: new Set() };
-        rerenderAll(); // Rerender to clear highlights etc.
+        rerenderAll();
         $infoPanel.innerHTML = '';
     
         if (members && members.length > 0) {
             let html = `<strong>${groupName} Members:</strong><br>`;
-            // Sort members by their total paper count with the main author
             members.sort((a, b) => b.paper_count - a.paper_count);
             
             html += members.map(member => {
                 const count = member.paper_count;
-                let className = 'author-tag'; // Use the same styling as in onNodeClick
+                let className = 'author-tag';
                 if (top10CoAuthors.has(member.id)) {
                     className += ' highlight';
                 }
-                // Make the author tag clickable
                 return `<span class="${className}" data-author="${member.id}" style="cursor: pointer;">${member.id} (${count})</span>`;
             }).join(', ');
             
             $infoPanel.innerHTML = html;
             
-            // Add click listeners to the new author tags
             $infoPanel.querySelectorAll('.author-tag').forEach(tag => {
                 tag.onclick = (e) => {
-                    e.stopPropagation(); // Prevent event bubbling
+                    e.stopPropagation();
                     onAuthorClick(e.target.dataset.author);
                 };
             });
@@ -641,7 +602,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             html += members.map(member => {
                 const count = member.paper_count;
-                // A simple span, not clickable for now.
                 return `<span class="inline-block bg-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 mr-2 mb-2">${member.id} (${count})</span>`;
             }).join('');
             
@@ -677,7 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeTab) return;
 
         const activeTabId = activeTab.id;
-        // ★ 修正: onAuthorGroupAdd を callbacks に追加
         const state = { selectionState, color };
         const callbacks = { 
             onNodeClick, 
@@ -686,16 +645,13 @@ document.addEventListener('DOMContentLoaded', () => {
             onAuthorClick, 
             onGroupClick, 
             onInstitutionGroupClick,
-            onAuthorGroupAdd: handleAuthorGroupAdd // ★ 追加
+            onAuthorGroupAdd: handleAuthorGroupAdd
         };
 
-        // --- Tab-specific visibility ---
-        // Explicitly control visibility of elements tied to a specific tab.
         if (umapLegendContainer) {
             umapLegendContainer.style.display = (activeTabId === 'umap-view') ? 'block' : 'none';
         }
 
-        // --- Render content for the active tab ---
         switch (activeTabId) {
             case 'umap-view':
                 renderUmapNetwork(svgMain, data, state, callbacks);
@@ -709,12 +665,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCitationNetwork(svgCitation, data, state, callbacks);
                 break;
             case 'coauthor-view':
-                // ★ 修正: callbacks を渡す
                 renderCoauthorTimeline(svgCoauthor, data, state, callbacks);
                 break;
             case 'synthesis-view':
-                // This tab doesn't require a JS-based render function.
-                // Having an explicit case prevents any other rendering logic from running.
                 break;
         }
     }
@@ -744,6 +697,5 @@ document.addEventListener('DOMContentLoaded', () => {
         window.resizeTimer = setTimeout(rerenderAll, 200);
     });
 
-    // [修正点] ページ読み込み時の force_refetch を true から false に変更
     requestAnalysisFromServer(false);
 });

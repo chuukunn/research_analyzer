@@ -1,14 +1,18 @@
 // Citation Network Visualization (Time-series)
+
+// ★ 状態保持用の変数をクロージャ外（または要素に紐づけ）で管理
+// SVG要素自体に前のトピックIDをデータとして持たせることで再利用を判定する
 function renderCitationNetwork(svg, data, state, callbacks) {
     const { selectionState, color } = state;
     const { onNodeClick } = callbacks;
 
     const MARGIN = 60;
-    svg.selectAll("*").remove();
-    const gMain = svg.append("g");
-
+    
     // --- Check Selection ---
     if (selectionState.topics.size !== 1) {
+        svg.selectAll("*").remove(); // 選択解除時はクリア
+        svg.property("currentTopicId", null); // 状態クリア
+
         const message = selectionState.topics.size > 1 
             ? "複数のトピックが選択されています。1つに絞ってください。"
             : "引用ネットワークを表示するには、まずトピックを1つ選択してください。";
@@ -23,6 +27,19 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     }
 
     const selectedTopicId = [...selectionState.topics][0];
+    const prevTopicId = svg.property("currentTopicId");
+
+    // ★ 修正点: トピックが変わっていない場合は、スタイル更新のみ行う (Update Pattern)
+    if (prevTopicId === selectedTopicId) {
+        updateNodeStyles(svg, state);
+        return; // 再シミュレーションしない
+    }
+
+    // トピックが変わったのでフルリフレッシュ
+    svg.selectAll("*").remove();
+    svg.property("currentTopicId", selectedTopicId); // 新しいトピックIDを保存
+    const gMain = svg.append("g");
+
 
     // --- Filter Data for the Selected Topic ---
     const topicNodeIds = new Set(data.nodes.filter(n => n.topic === selectedTopicId).map(n => n.paper_id));
@@ -40,7 +57,7 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     const simLinks = links.map(l => ({
         source: nodeMap.get(l.source),
         target: nodeMap.get(l.target)
-    })).filter(l => l.source && l.target); // Ensure links are valid
+    })).filter(l => l.source && l.target);
 
 
     const container = svg.node().closest("#citation-container");
@@ -50,17 +67,14 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     const years = [...new Set(nodes.map(d => d.year))].sort((a,b) => a - b);
     if (years.length === 0) return;
     
-    // --- 修正点: Y軸の描画範囲（range）を3倍に ---
-    // SVGの高さ(H)に基づいて計算される描画領域の高さを3倍にします。
-    const effectiveHeight = H > MARGIN * 2 ? H - MARGIN * 2 : 1; // 最小高さを1に
-    const rangeHeight = effectiveHeight * 3; // 高さを3倍
+    // Y軸の描画範囲（range）を3倍に
+    const effectiveHeight = H > MARGIN * 2 ? H - MARGIN * 2 : 1;
+    const rangeHeight = effectiveHeight * 3;
 
     const yBand = d3.scaleBand()
         .domain(years)
-        // .range([MARGIN, H - MARGIN]) // 修正前
-        .range([MARGIN, MARGIN + rangeHeight]) // 修正後: 3倍の高さを持つrangeを設定
+        .range([MARGIN, MARGIN + rangeHeight])
         .paddingInner(0.5);
-    // --- 修正ここまで ---
 
     const yPos = y => yBand(y) + yBand.bandwidth() / 2;
 
@@ -82,6 +96,9 @@ function renderCitationNetwork(svg, data, state, callbacks) {
         .force("charge", d3.forceManyBody().strength(-80))
         .force("collision", d3.forceCollide().radius(d => d.r + 2))
         .force("x", d3.forceX(W / 2).strength(0.1));
+    
+    // シミュレーションインスタンスをSVGに保存して、後で停止できるようにする（必要であれば）
+    svg.property("simulation", sim);
 
     // --- Arrow Marker ---
     svg.append("defs").append("marker")
@@ -94,7 +111,7 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     // --- Render Elements ---
     const link = gMain.selectAll(".link").data(simLinks).enter().append("line")
         .attr("class", "link")
-        .attr("marker-mid", "url(#mArr)") // 矢印を中央に配置
+        .attr("marker-mid", "url(#mArr)")
         .attr("stroke", "#555").attr("stroke-width", 1);
         
     const node = gMain.selectAll(".node").data(simNodes).enter().append("g")
@@ -102,12 +119,13 @@ function renderCitationNetwork(svg, data, state, callbacks) {
         .call(drag(sim))
         .on("click", (e, d) => {
             e.stopPropagation();
-            onNodeClick(d);
+            onNodeClick(d); // ここで親のstateが更新され、rerenderAll -> renderCitationNetworkが再度呼ばれる
         });
 
     node.append("circle")
         .attr("r", d => d.r)
         .attr("fill", d => color(d.topic))
+        // 初回描画時のスタイル設定
         .attr("stroke", d => state.selectionState.papers.has(d.paper_id) ? "#000" : "#fff")
         .attr("stroke-width", d => state.selectionState.papers.has(d.paper_id) ? 2 : 1);
 
@@ -124,8 +142,16 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     zoom(svg, gMain);
 }
 
+// ★ 追加: スタイル更新のみを行う関数
+function updateNodeStyles(svg, state) {
+    const node = svg.selectAll(".node circle");
+    // トランジションをつけて滑らかに変化させる
+    node.transition().duration(200)
+        .attr("stroke", d => state.selectionState.papers.has(d.paper_id) ? "#000" : "#fff")
+        .attr("stroke-width", d => state.selectionState.papers.has(d.paper_id) ? 2 : 1);
+}
+
 /* ========= 共通ユーティリティ ========= */
-// Y軸方向の移動を制限するよう修正
 function drag(sim) {
     function dragstarted(event, d) {
         if (!event.active) sim.alphaTarget(0.3).restart();
