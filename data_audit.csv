@@ -1,0 +1,51 @@
+ID,Title,Year,Type,Abstract Length (chars),Abstract Preview,Inverted Index Present
+W4415200047,Integrating human knowledge for explainable AI,2025,article,983,Abstract This paper presents a methodology for int...,True
+W4414687451,Designing for Collaboration: Visualization to Enable Human–LLM Analytical Partnership,2025,article,865,Visualization artifacts have long served as anchor...,True
+W4411442696,Visualizing game dynamics at a specific time: Influence of the players’ poses for tactical analyses in padel,2025,article,1020,Tactical elements are crucial in team sports. The ...,True
+W4410530406,Visually-supported topic modeling for understanding behavioral patterns from spatio–temporal events,2025,article,1373,Spatio-temporal event sequences consist of activit...,True
+W4408848647,"Geovisualization: past, present, and future",2025,article,3,224...,True
+W4408725804,Contextualized visual analytics for multivariate events,2025,article,664,"For event analysis, the information from both befo...",True
+W4405944965,Towards a Hybrid Human-Machine Discovery of Complex Movement Patterns,2024,book-chapter,0,EMPTY,False
+W4404250088,Creating Quasi-Maps for Uncovering Space-Time Patterns,2024,article,0,EMPTY,False
+W4404250201,Mapping Time Lags in Epidemics,2024,article,0,EMPTY,False
+W4400132771,Topic modelling for spatial insights: Uncovering space use from movement data,2024,article,1113,We present a novel approach to understanding space...,True
+W4396695389,Mobility Data Science: Perspectives and Challenges,2024,article,711,Mobility data captures the locations of moving obj...,True
+W4392979894,Human-in-the-Loop: Visual Analytics for Building Models Recognizing Behavioral Patterns in Time Series,2024,article,800,Detecting complex behavioral patterns in temporal ...,True
+W4389476656,Extraction and Visually Driven Analysis of VGI for Understanding People’s Behavior in Relation to Multifaceted Context,2023,book-chapter,1330,Abstract Volunteered Geographic Information in the...,True
+W4386776420,Exploring and visualizing temporal relations in multivariate time series,2023,article,2,57...,True
+W4386220934,Episodes and Topics in Multivariate Temporal Data,2023,article,1142,Abstract The term ‘episode’ refers to a time inter...,True
+W4386157387,Deep reinforcement learning in service of air traffic controllers to resolve tactical conflicts,2023,article,0,EMPTY,False
+W4383065806,Re-interpreting rules interpretability,2023,article,655,Abstract Trustworthy machine learning requires a h...,True
+W4384263461,Towards Mobility Data Science (Vision Paper),2023,preprint,690,Mobility data captures the locations of moving obj...,True
+W4378234403,It's about Time: Analytical Time Periodization,2023,article,1008,Abstract This paper presents a novel approach to t...,True
+W4364358025,A conceptual framework for developing dashboards for big mobility data,2023,article,901,Dashboards are an increasingly popular form of dat...,True
+W4360604687,"The Flow of Trust: A Visualization Framework to Externalize, Explore, and Explain Trust in ML Applications",2023,article,818,We present a conceptual framework for the developm...,True
+W4320000513,"Identifying, exploring, and interpreting time series shapes in multivariate time intervals",2023,article,2,77...,True
+W49930183,Extracting patterns of individual movement behaviour from a massive collection of tracked positions,2022,article,453,Abstract. A EU-funded project GeoPKDD develops met...,True
+W2182785605,A generalisation-based approach to anonymising movement data,2022,article,546,"The possibility to collect, store, disseminate, an...",True
+W4302424645,A hybrid prediction and search approach for flexible and efficient exploration of big data,2022,article,0,EMPTY,False
+W4295779216,Impact of Temporally Downsampling Movement Data on Interpretation,2022,article,1540,The advances in locational technologies have resul...,True
+W3021831361,Big data visualization and analytics: Future research challenges and emerging applications,2022,preprint,451,© 2020 Copyright for this paper by its author(s). ...,True
+W4282914661,Explaining deep reinforcement learning decisions in complex multiagent settings: towards enabling automation in air traffic flow management,2022,article,0,EMPTY,False
+W4281490671,Seeking Patterns of Visual Pattern Discovery for Knowledge Building,2022,article,1102,"Abstract Currently, the methodological and technic...",True
+W4226457422,Re-interpreting Rules Interpretability,2022,preprint,644,Abstract Trustworthy machine learning requires a h...,True
+W4220992118,Supporting Visual Exploration of Iterative Job Scheduling,2022,article,916,We consider the general problem known as job shop ...,True
+W4210257758,A learning-based approach for efficient visualization construction,2022,article,0,EMPTY,False
+W4210298342,Visual Analytics for Human-Centered Machine Learning,2022,article,719,We introduce a new research area in visual analyti...,True
+W4412340772,Mobility Data Science (Dagstuhl Seminar 22021),2022,article,961,This report documents the program and outcomes of ...,True
+W3173715284,Toward flexible visual analytics augmented through smooth display transitions,2021,article,0,EMPTY,False
+W3164080097,Correction to: Human migration: the big data perspective,2021,article,832,"The article ""Human migration: the big data perspec...",True
+W3015578022,"Give more data, awareness and control to individual citizens, and they will help COVID-19 containment",2021,preprint,0,EMPTY,False
+W3120515165,Automating and utilising equal-distribution data classification,2021,article,909,"Data classification, i.e. organising data items in...",True
+W3126358682,"Give more data, awareness and control to individual citizens, and they will help COVID-19 containment",2021,article,1615,The rapid dynamics of COVID-19 calls for quick and...,True
+W3127482518,Visual Analytics of Vessel Movement,2021,book-chapter,0,EMPTY,False
+W3149746193,Visual Analytics for Characterizing Mobility Aspects of Urban Context,2021,book-chapter,862,Abstract Visual analytics science develops princip...,True
+W3114823909,A theoretical model for pattern discovery in visual analytics,2020,article,729,The word ‘pattern’ frequently appears in the visua...,True
+W3096817374,Co-Bridges: Pair-wise Visual Connection and Comparison for Multi-item Data Streams,2020,article,1155,"In various domains, there are abundant streams or ...",True
+W3037487054,Spatio-temporal visual analytics: a vision for 2020s,2020,article,435,Visual analytics is a research discipline that bas...,True
+W3036157671,Citywide Traffic Analysis Based on the Combination of Visual and Analytic Approaches,2020,article,0,EMPTY,False
+W3024342691,Guide Me in Analysis: A Framework for Guidance Designers,2020,article,731,Abstract Guidance is an emerging topic in the fiel...,True
+W4287815821,"Give more data, awareness and control to individual citizens, and they\n will help COVID-19 containment",2020,preprint,1604,The rapid dynamics of COVID-19 calls for quick and...,True
+W3011781542,(So) Big Data and the transformation of the city,2020,article,1070,Abstract The exponential increase in the availabil...,True
+W3013847853,Human migration: the big data perspective,2020,article,0,EMPTY,False
+W3081898781,Visual Analytics for Data Scientists,2020,book,0,EMPTY,False

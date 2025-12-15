@@ -7,7 +7,8 @@ import nltk
 from nltk.corpus import stopwords
 
 # Custom modules for data fetching and analysis
-from data_fetcher import fetch_papers_from_openalex
+# Custom modules for data fetching and analysis
+from data_fetcher import fetch_papers
 from analyzer import analyze_papers
 
 # ---------------- 初期化 (Initialization) ----------------
@@ -23,11 +24,96 @@ print("SentenceTransformer model loaded.")
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# --- グローバル変数 (Global Variables) ---
-paper_cache = {}
-analysis_cache = {}
-precomputed_cache = {} # Cache for embeddings and other heavy data
-vector_cache = {} # ★ 論文IDごとのベクトルを永続的にキャッシュ
+# --- Cache Manager Class ---
+class CacheManager:
+    def __init__(self):
+        self.paper_cache = {}
+        self.analysis_cache = {}
+        self.precomputed_cache = {}
+        self.vector_cache = {} # Persistent vector cache
+
+    def get_base_key(self, params):
+        # Adding a version suffix to invalidate previous caches due to logic change
+        version = "v2" 
+        return hashlib.md5((json.dumps(params, sort_keys=True) + version).encode()).hexdigest()
+
+    def get_embedding_key(self, base_key, params):
+        key_params = {
+            "embedding_model": params["embedding_model"],
+            "time_weight": params["time_weight"],
+        }
+        suffix = hashlib.md5(json.dumps(key_params, sort_keys=True).encode()).hexdigest()
+        return f"{base_key}_{suffix}"
+
+    def get_full_precompute_key(self, base_key, params):
+        key_params = {
+            "embedding_model": params["embedding_model"],
+            "time_weight": params["time_weight"],
+            "dim_red_model": params["dim_red_model"],
+            "n_neighbors": params["n_neighbors"],
+            "min_dist": params["min_dist"]
+        }
+        suffix = hashlib.md5(json.dumps(key_params, sort_keys=True).encode()).hexdigest()
+        return f"{base_key}_{suffix}"
+
+    def get_analysis_key(self, base_key, params):
+        suffix = hashlib.md5(json.dumps(params, sort_keys=True).encode()).hexdigest()
+        return f"{base_key}_{suffix}"
+
+    def clear_related_cache(self, base_key):
+        print(f"Clearing cache related to base_key: {base_key}")
+        self.paper_cache.pop(base_key, None)
+        
+        precomputed_keys_to_del = [k for k in self.precomputed_cache if k.startswith(base_key)]
+        for k in precomputed_keys_to_del:
+            self.precomputed_cache.pop(k, None)
+            
+        analysis_keys_to_del = [k for k in self.analysis_cache if k.startswith(base_key)]
+        for k in analysis_keys_to_del:
+            self.analysis_cache.pop(k, None)
+        
+        print(f"Removed {len(precomputed_keys_to_del)} precomputed entries and {len(analysis_keys_to_del)} analysis entries.")
+
+    def get_cached_analysis(self, key):
+        return self.analysis_cache.get(key)
+
+    def set_cached_analysis(self, key, data):
+        self.analysis_cache[key] = data
+
+    def get_cached_papers(self, key):
+        return self.paper_cache.get(key)
+
+    def set_cached_papers(self, key, data):
+        self.paper_cache[key] = data
+
+    def get_precomputed_data(self, full_key, embedding_key):
+        # 1. Try full precomputed data (UMAP done)
+        if full_key in self.precomputed_cache:
+            print(f"Using cached precomputed data (full key: {full_key})")
+            return self.precomputed_cache[full_key]
+        
+        # 2. Try embedding only data
+        if embedding_key in self.precomputed_cache:
+            print(f"Using cached embedding data (embedding key: {embedding_key})")
+            return self.precomputed_cache[embedding_key]
+            
+        return None
+
+    def update_precomputed_cache(self, full_key, embedding_key, data):
+        if 'reduced_10d' in data:
+            self.precomputed_cache[full_key] = data
+            print(f"Stored/Updated full precomputed data (key: {full_key})")
+        elif 'combined_embeddings' in data:
+            embedding_cache_data = {
+                'docs': data.get('docs'),
+                'pids_with_abs': data.get('pids_with_abs'),
+                'combined_embeddings': data.get('combined_embeddings')
+            }
+            self.precomputed_cache[embedding_key] = embedding_cache_data
+            print(f"Stored/Updated embedding data (key: {embedding_key})")
+
+# Initialize Cache Manager
+cache_manager = CacheManager()
 
 # ------------ Flaskエンドポイント (Flask Endpoints) ------------
 @app.route("/data")
@@ -38,156 +124,90 @@ def data():
     # --- パラメータの取得 (Get Parameters) ---
     base_params = {
         "aid": request.args.get("aid", "a5086198262"),
-        "max_papers": request.args.get("max_papers", type=int, default=200),
+        "max_papers": request.args.get("max_papers", type=int, default=1000),
+        "source": request.args.get("source", "openalex")
     }
     
-    # クラスタリングモデルの取得
     clustering_model = request.args.get("clustering_model", "hdbscan")
-    
-    # ★ 修正: kの値の取得ロジックを簡素化
-    # フロントエンドがモデルに関わらず 'k' パラメータで正しい値を送ってくることを前提とする
     k_value = request.args.get("k", type=int, default=8)
+    
+    # フィルタリングパラメータ
+    min_abs_len = request.args.get("min_abs_len", default=0, type=int)
+    excluded_ids_str = request.args.get("excluded_ids", default="")
+    excluded_ids = set(excluded_ids_str.split(",")) if excluded_ids_str else set()
 
     analysis_params = {
         "k": k_value,
         "time_weight": request.args.get("time_weight", default=0, type=float),
         "n_neighbors": request.args.get("n_neighbors", default=15, type=int),
         "min_dist": request.args.get("min_dist", default=0.1, type=float),
-        "embedding_model": "simcse", # SimCSEに固定
-        "dim_red_model": "umap", # UMAPに固定
+        "embedding_model": "simcse",
+        "dim_red_model": "umap",
         "clustering_model": clustering_model,
+        "min_abs_len": min_abs_len,
+        "excluded_ids_hash": hashlib.md5(excluded_ids_str.encode()).hexdigest() # Cache key component
     }
     
-    # --- キャッシュキーの定義 ---
-    
-    # 1. 論文取得キャッシュキー (AID, max_papers)
-    base_key = hashlib.md5(json.dumps(base_params, sort_keys=True).encode()).hexdigest()
-    
-    # 2. ベクトル化キャッシュキー (論文 + embedding_model, time_weight)
-    embedding_key_params = {
-        "embedding_model": analysis_params["embedding_model"],
-        "time_weight": analysis_params["time_weight"],
-    }
-    embedding_key_suffix = hashlib.md5(json.dumps(embedding_key_params, sort_keys=True).encode()).hexdigest()
-    embedding_key = f"{base_key}_{embedding_key_suffix}"
+    # --- Cache Keys ---
+    base_key = cache_manager.get_base_key(base_params)
+    embedding_key = cache_manager.get_embedding_key(base_key, analysis_params)
+    full_precompute_key = cache_manager.get_full_precompute_key(base_key, analysis_params)
+    full_analysis_key = cache_manager.get_analysis_key(base_key, analysis_params)
 
-    # 3. 次元削減キャッシュキー (ベクトル化 + dim_red_model, n_neighbors, min_dist)
-    full_precompute_key_params = {
-        **embedding_key_params,
-        "dim_red_model": analysis_params["dim_red_model"],
-        "n_neighbors": analysis_params["n_neighbors"],
-        "min_dist": analysis_params["min_dist"]
-    }
-    full_precompute_key_suffix = hashlib.md5(json.dumps(full_precompute_key_params, sort_keys=True).encode()).hexdigest()
-    full_precompute_key = f"{base_key}_{full_precompute_key_suffix}"
-    
-    # 4. 最終分析キャッシュキー (すべて + k, clustering_model)
-    # 修正点: base_params を除き、analysis_params のみでハッシュを生成
-    full_key_params = {
-        **analysis_params
-    }
-    full_key_suffix = hashlib.md5(json.dumps(full_key_params, sort_keys=True).encode()).hexdigest()
-    full_key = f"{base_key}_{full_key_suffix}"
+    # --- Check Full Analysis Cache ---
+    if not force_refetch:
+        cached_result = cache_manager.get_cached_analysis(full_analysis_key)
+        if cached_result:
+            print(f"Returning full analysis from cache (key: {full_analysis_key})")
+            return jsonify(cached_result)
 
-
-    # --- キャッシュの確認 (1. 最終分析) ---
-    if not force_refetch and full_key in analysis_cache:
-        print(f"Returning full analysis from cache (key: {full_key})")
-        return jsonify(analysis_cache[full_key])
-
-    # --- force_refetch の処理 ---
+    # --- Handle Force Refetch ---
     if force_refetch:
-        print("Force refetch requested. Clearing paper and precomputed caches.")
-        paper_cache.pop(base_key, None)
-        
-        # 修正点: base_key で始まるすべてのキャッシュを削除
-        precomputed_keys_to_del = [k for k in precomputed_cache if k.startswith(base_key)]
-        for k in precomputed_keys_to_del:
-            precomputed_cache.pop(k, None)
-            
-        analysis_keys_to_del = [k for k in analysis_cache if k.startswith(base_key)]
-        for k in analysis_keys_to_del:
-            analysis_cache.pop(k, None)
-            
-        # ★ vector_cache はクリアしない
-        print(f"Removed {len(precomputed_keys_to_del)} precomputed cache entries and {len(analysis_keys_to_del)} analysis cache entries related to base_key {base_key}")
-        print(f"Persistent vector_cache size: {len(vector_cache)}")
+        print("Force refetch requested.")
+        cache_manager.clear_related_cache(base_key)
 
-
-    # --- 論文データの取得 (キャッシュ 2. 論文) ---
-    papers_tuple = paper_cache.get(base_key)
+    # --- Fetch Papers ---
+    papers_tuple = cache_manager.get_cached_papers(base_key)
     if not papers_tuple:
-        print(f"Fetching papers from OpenAlex (aid: {base_params['aid']})")
-        papers, main_author_name, error = fetch_papers_from_openalex(base_params['aid'], base_params['max_papers'])
+        print(f"Fetching papers from {base_params['source']} (aid: {base_params['aid']})")
+        papers, main_author_name, error = fetch_papers(base_params['source'], base_params['aid'], base_params['max_papers'])
         if error:
             return jsonify({"error": str(error)}), 500
-        paper_cache[base_key] = (papers, main_author_name)
+        cache_manager.set_cached_papers(base_key, (papers, main_author_name))
     else:
         print(f"Using cached papers (key: {base_key})")
         papers, main_author_name = papers_tuple
 
-    # SimCSEモデルを直接取得
-    embedding_model = embedding_models["simcse"]
-
-    # --- 修正点: precomputed_data の準備ロジック ---
-    precomputed_data_to_pass = None
+    # --- Prepare Precomputed Data ---
+    precomputed_data_to_pass = cache_manager.get_precomputed_data(full_precompute_key, embedding_key)
     
-    # recluster_only に関係なく、まずキャッシュを探す
-    
-    # 1. 次元削減まで完了したキャッシュを探す (フルキャッシュ)
-    cached_full_precomputed = precomputed_cache.get(full_precompute_key)
-    if cached_full_precomputed:
-        print(f"Using cached precomputed data (full key: {full_precompute_key})")
-        precomputed_data_to_pass = cached_full_precomputed
-    else:
-        # 2. ベクトル化だけ完了したキャッシュを探す
-        cached_embedding_precomputed = precomputed_cache.get(embedding_key)
-        if cached_embedding_precomputed:
-            print(f"Using cached embedding data (embedding key: {embedding_key})")
-            # 'reduced_10d' などが存在しないため、analyzer.py は次元削減から実行する
-            precomputed_data_to_pass = cached_embedding_precomputed
+    if not precomputed_data_to_pass:
+        if recluster_only:
+             print("Recluster requested but no precomputed data found.")
         else:
-            # キャッシュが何もない場合
-            if recluster_only:
-                print(f"Recluster requested, but no precomputed data found (key: {full_precompute_key} or {embedding_key})")
-            else:
-                print(f"No precomputed data found. Starting from scratch (key: {full_precompute_key} or {embedding_key})")
-    # --- 修正ここまで ---
+             print("No precomputed data found. Starting from scratch.")
+
+    # --- Run Analysis ---
+    embedding_model = embedding_models["simcse"]
     
-    # --- 分析の実行 ---
+    # Filter papers before analysis
+    papers_to_analyze = {pid: p for pid, p in papers.items() if pid not in excluded_ids}
+    
     analysis_result = analyze_papers(
-        papers=dict(papers), 
+        papers=papers_to_analyze, 
         params=analysis_params,
         embedding_model=embedding_model,
         stop_words=STOP_WORDS,
-        precomputed_data=precomputed_data_to_pass, # Noneか、キャッシュされたデータ
+        precomputed_data=precomputed_data_to_pass,
         main_author_name=main_author_name,
-        vector_cache=vector_cache # ★ 論文ごとベクトルキャッシュを渡す
+        vector_cache=cache_manager.vector_cache
     )
     
-    # --- 分析結果のキャッシュ保存 ---
+    # --- Update Caches ---
     if 'precomputed_data' in analysis_result:
-        updated_precomputed_data = analysis_result['precomputed_data']
-        
-        # 1. 'reduced_10d' があれば、次元削減キャッシュ（フル）を更新
-        if 'reduced_10d' in updated_precomputed_data:
-            # 常に最新のデータで上書きする
-            precomputed_cache[full_precompute_key] = updated_precomputed_data
-            print(f"Stored/Updated full precomputed data in cache (key: {full_precompute_key})")
-        
-        # 2. 'reduced_10d' はないが 'combined_embeddings' がある場合、ベクトル化キャッシュを更新
-        elif 'combined_embeddings' in updated_precomputed_data:
-            # ベクトル化キャッシュにはベクトル化関連のデータのみ保存
-            embedding_cache_data = {
-                'docs': updated_precomputed_data.get('docs'),
-                'pids_with_abs': updated_precomputed_data.get('pids_with_abs'),
-                'combined_embeddings': updated_precomputed_data.get('combined_embeddings')
-            }
-            # 常に最新のデータで上書きする
-            precomputed_cache[embedding_key] = embedding_cache_data
-            print(f"Stored/Updated embedding data in cache (key: {embedding_key})")
+        cache_manager.update_precomputed_cache(full_precompute_key, embedding_key, analysis_result['precomputed_data'])
 
-    # --- 最終データの整形 ---
+    # --- Format Final Data ---
     analyzed_papers = analysis_result['papers']
     paper_map = {pid: p for pid, p in analyzed_papers.items()}
     edges = [{"source": r, "target": pid} for pid, p in paper_map.items() for r in p.get("references", []) if r in paper_map]
@@ -203,9 +223,9 @@ def data():
         "main_author_name": main_author_name
     }
     
-    # 最終分析結果をキャッシュ
-    analysis_cache[full_key] = final_data
-    print(f"Stored full analysis in cache (key: {full_key})")
+    cache_manager.set_cached_analysis(full_analysis_key, final_data)
+    print(f"Stored full analysis in cache (key: {full_analysis_key})")
+    
     return jsonify(final_data)
 
 @app.route("/")

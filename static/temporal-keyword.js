@@ -22,7 +22,7 @@ async function showKeywordDetailsModal(topic, allNodes) {
 
     // 修正点 3: タイトルを「トピック要約」に変更
     titleEl.textContent = `トピック ${topic.Topic} - 要約`;
-    
+
     contentEl.innerHTML = '<p class="text-slate-500">トピックの要約を生成中です...</p>';
 
     modal.classList.remove('hidden');
@@ -47,7 +47,7 @@ async function showKeywordDetailsModal(topic, allNodes) {
         }
 
         const topicNodes = allNodes.filter(node => node.topic === topic.Topic);
-        
+
         // ★ 修正: 引用数上位10件 -> トピック内の「すべて」の論文のアブストラクト「全文」に変更
         const papersInfo = topicNodes
             .sort((a, b) => b.cit_cnt - a.cit_cnt) // 引用数でソート
@@ -79,7 +79,7 @@ ${papersInfo.join('\n')}
 `;
 
         const summaryText = await window.callGeminiAPI(prompt);
-        
+
         // 生成されたテキストを整形して表示
         contentEl.innerHTML = `
             <div class="prose prose-sm max-w-none">
@@ -111,7 +111,7 @@ function renderTemporalKeyword(container, data, state, callbacks) {
     // --- グラフタイプ切替 (Stream / Bar) ---
     const typeGroup = document.createElement('div');
     typeGroup.className = 'flex items-center space-x-1 p-0.5 bg-slate-200 rounded-md';
-    
+
     const streamBtn = document.createElement('button');
     streamBtn.textContent = 'Stream';
     streamBtn.className = `text-xs px-2 py-1 rounded ${temporalChartType === 'stream' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
@@ -134,7 +134,7 @@ function renderTemporalKeyword(container, data, state, callbacks) {
     };
     typeGroup.appendChild(barBtn);
     controlsContainer.appendChild(typeGroup);
-    
+
     // --- 修正点1: モード切替 (割合 / 出版数) ---
     const modeGroup = document.createElement('div');
     modeGroup.className = 'flex items-center space-x-1 p-0.5 bg-slate-200 rounded-md';
@@ -173,7 +173,7 @@ function renderTemporalKeyword(container, data, state, callbacks) {
     const keywordLegendContainer = document.createElement('div');
     keywordLegendContainer.id = 'keyword-legend-container';
     keywordLegendContainer.className = 'w-1/3 h-full p-3 overflow-y-auto';
-    
+
     container.append(leftPanel);
     container.append(keywordLegendContainer);
 
@@ -182,7 +182,7 @@ function renderTemporalKeyword(container, data, state, callbacks) {
     } else {
         renderBarChart(svgChart, data, state, callbacks);
     }
-    
+
     renderKeywordLegend(keywordLegendContainer, data, state, callbacks);
 }
 
@@ -195,7 +195,7 @@ function renderStreamgraph(svg, data, state, callbacks) {
     const MARGIN = { top: 20, right: 30, bottom: 40, left: 50 };
     svg.selectAll("*").remove();
 
-    const plottableNodes = nodes.filter(n => n.year > 0 && n.topic !== -1);
+    const plottableNodes = nodes.filter(n => n.year > 0);
     if (plottableNodes.length < 2) {
         svg.append("text").attr("x", "50%").attr("y", "50%").attr("text-anchor", "middle").text("データが不足しています。");
         return;
@@ -206,15 +206,15 @@ function renderStreamgraph(svg, data, state, callbacks) {
     if (W <= 0 || H <= 0) return;
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
-    
-    let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
-    
+
+    let topicIds = topic_info.map(t => t.Topic);
+
     if (selectionState.topics.size === 1) {
         const selectedTopicId = [...selectionState.topics][0];
         const index = topicIds.indexOf(selectedTopicId);
         if (index > -1) {
-            topicIds.splice(index, 1); 
-            topicIds.unshift(selectedTopicId); 
+            topicIds.splice(index, 1);
+            topicIds.unshift(selectedTopicId);
         }
     }
 
@@ -231,21 +231,21 @@ function renderStreamgraph(svg, data, state, callbacks) {
 
     const series = d3.stack()
         .keys(topicIds)
-        .order(d3.stackOrderNone) 
+        .order(d3.stackOrderNone)
         .offset(offset) // 修正
         (dataForStream);
-        
+
     const yDomain = temporalChartMode === 'expand' ? [0, 1] : d3.extent(series.flat(2));
     // --- 修正ここまで ---
-        
+
     const xScale = d3.scaleLinear()
         .domain(d3.extent(dataForStream, d => d.year))
         .range([MARGIN.left, W - MARGIN.right]);
-        
+
     const yScale = d3.scaleLinear()
         .domain(yDomain) // 修正
         .range([H - MARGIN.bottom, MARGIN.top]);
-        
+
     const area = d3.area()
         .x(d => xScale(d.data.year))
         .y0(d => yScale(d[0]))
@@ -259,20 +259,20 @@ function renderStreamgraph(svg, data, state, callbacks) {
         .attr("opacity", ({ key }) => (selectionState.topics.size === 0 || selectionState.topics.has(key)) ? 1 : 0.2)
         .style("cursor", "pointer")
         .on("click", (event, d) => { event.stopPropagation(); onTopicClick(d.key); })
-        .append("title").text(({key, ...d}) => {
+        .append("title").text(({ key, ...d }) => {
             const topic = topic_info.find(t => t.Topic === key);
             const title = topic ? topic.Keywords : `Topic ${key}`;
             // ツールチップの内容もモードに応じて変更
             if (temporalChartMode === 'expand') {
-                 // 'd' は series の要素 (e.g., [ [y0, y1], [y0, y1], ... ])
-                 // クリックされた特定の点のデータを見つけるのは難しいので、トピック名のみ
+                // 'd' は series の要素 (e.g., [ [y0, y1], [y0, y1], ... ])
+                // クリックされた特定の点のデータを見つけるのは難しいので、トピック名のみ
                 return title;
             } else {
                 // 絶対数の場合も同様
                 return title;
             }
         });
-        
+
     svg.on("click", onBackgroundClick);
 
     svg.append("g").attr("transform", `translate(0, ${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
@@ -288,7 +288,7 @@ function renderBarChart(svg, data, state, callbacks) {
     const MARGIN = { top: 20, right: 30, bottom: 50, left: 50 };
     svg.selectAll("*").remove();
 
-    const plottableNodes = nodes.filter(n => n.year > 0 && n.topic !== -1);
+    const plottableNodes = nodes.filter(n => n.year > 0);
     if (plottableNodes.length === 0) {
         svg.append("text").attr("x", "50%").attr("y", "50%").attr("text-anchor", "middle").text("データが不足しています。");
         return;
@@ -299,20 +299,20 @@ function renderBarChart(svg, data, state, callbacks) {
     if (W <= 0 || H <= 0) return;
 
     const countsByYearTopic = d3.rollup(plottableNodes, v => v.length, d => d.year, d => d.topic);
-    
-    let topicIds = topic_info.map(t => t.Topic).filter(id => id !== -1);
-    
+
+    let topicIds = topic_info.map(t => t.Topic);
+
     if (selectionState.topics.size === 1) {
         const selectedTopicId = [...selectionState.topics][0];
         const index = topicIds.indexOf(selectedTopicId);
         if (index > -1) {
-            topicIds.splice(index, 1); 
-            topicIds.unshift(selectedTopicId); 
+            topicIds.splice(index, 1);
+            topicIds.unshift(selectedTopicId);
         }
     }
 
     const dataForStack = Array.from(countsByYearTopic.entries()).map(([year, topics]) => ({ year, ...Object.fromEntries(topicIds.map(id => [id, topics.get(id) || 0])) })).sort((a, b) => a.year - b.year);
-    
+
     if (dataForStack.length === 0) return;
 
     // --- 修正点1: モードに応じて offset, yDomain, yTickFormat を変更 ---
@@ -338,35 +338,35 @@ function renderBarChart(svg, data, state, callbacks) {
         .attr("fill", d => color(d.key))
         .attr("opacity", ({ key }) => (selectionState.topics.size === 0 || selectionState.topics.has(key)) ? 1 : 0.2)
         .selectAll("rect").data(d => d).join("rect")
-            .attr("x", d => xScale(d.data.year))
-            .attr("y", d => yScale(d[1]))
-            .attr("height", d => Math.max(0, yScale(d[0]) - yScale(d[1]))) // 高さが負にならないように
-            .attr("width", xScale.bandwidth())
-            .style("cursor", "pointer")
-            .on("click", (event, d) => {
-                const topicKey = series.find(s => s.includes(d)).key;
-                event.stopPropagation();
-                onTopicClick(topicKey);
-            })
-            .append("title").text(d => {
-                const topicKey = series.find(s => s.includes(d)).key;
-                const topic = topic_info.find(t => t.Topic === topicKey);
-                
-                // --- 修正点1: ツールチップの表示をモードに応じて変更 ---
-                let valueText = '';
-                if (temporalChartMode === 'expand') {
-                    const percentage = (d[1] - d[0]) * 100;
-                    valueText = `割合: ${percentage.toFixed(1)}%`;
-                } else {
-                    const count = d.data[topicKey] || 0;
-                    valueText = `出版数: ${count}`;
-                }
-                return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\n${valueText}`;
-                // --- 修正ここまで ---
-            });
+        .attr("x", d => xScale(d.data.year))
+        .attr("y", d => yScale(d[1]))
+        .attr("height", d => Math.max(0, yScale(d[0]) - yScale(d[1]))) // 高さが負にならないように
+        .attr("width", xScale.bandwidth())
+        .style("cursor", "pointer")
+        .on("click", (event, d) => {
+            const topicKey = series.find(s => s.includes(d)).key;
+            event.stopPropagation();
+            onTopicClick(topicKey);
+        })
+        .append("title").text(d => {
+            const topicKey = series.find(s => s.includes(d)).key;
+            const topic = topic_info.find(t => t.Topic === topicKey);
+
+            // --- 修正点1: ツールチップの表示をモードに応じて変更 ---
+            let valueText = '';
+            if (temporalChartMode === 'expand') {
+                const percentage = (d[1] - d[0]) * 100;
+                valueText = `割合: ${percentage.toFixed(1)}%`;
+            } else {
+                const count = d.data[topicKey] || 0;
+                valueText = `出版数: ${count}`;
+            }
+            return `${topic ? topic.Keywords : `Topic ${topicKey}`}\nYear: ${d.data.year}\n${valueText}`;
+            // --- 修正ここまで ---
+        });
 
     svg.on("click", onBackgroundClick);
-    const xAxis = g.append("g").attr("transform", `translate(0,${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickValues(xScale.domain().filter((d,i) => !(i%Math.ceil(years.length/10)) || i === years.length - 1)));
+    const xAxis = g.append("g").attr("transform", `translate(0,${H - MARGIN.bottom})`).call(d3.axisBottom(xScale).tickValues(xScale.domain().filter((d, i) => !(i % Math.ceil(years.length / 10)) || i === years.length - 1)));
     xAxis.selectAll("text").attr("transform", "rotate(-45)").style("text-anchor", "end");
     g.append("g").attr("transform", `translate(${MARGIN.left},0)`).call(d3.axisLeft(yScale).ticks(5).tickFormat(yTickFormat)); // 修正
 }
@@ -382,7 +382,7 @@ function renderKeywordLegend(container, data, state, callbacks) {
     const legendList = document.createElement('div');
     container.appendChild(legendList);
 
-    const topics = topic_info.filter(t => t.Topic !== -1);
+    const topics = topic_info;
     if (topics.length === 0) {
         legendList.innerHTML = '<p class="text-slate-500">表示するトピックがありません。</p>';
         return;
@@ -394,9 +394,9 @@ function renderKeywordLegend(container, data, state, callbacks) {
         item.dataset.topicId = topic.Topic;
         const isSelected = selectionState.topics.has(topic.Topic);
         const noSelection = selectionState.topics.size === 0;
-        
+
         item.style.borderColor = isSelected ? color(topic.Topic) : '#e2e8f0';
-        item.style.backgroundColor = isSelected ? d3.color(color(topic.Topic)).copy({opacity: 0.1}) : 'white';
+        item.style.backgroundColor = isSelected ? d3.color(color(topic.Topic)).copy({ opacity: 0.1 }) : 'white';
         item.style.opacity = (noSelection || isSelected) ? 1 : 0.5;
 
         // 修正点 3: ボタンテキストを「トピック要約」に変更
@@ -418,7 +418,7 @@ function renderKeywordLegend(container, data, state, callbacks) {
         if (e.target.closest('.keyword-details-btn')) {
             e.stopPropagation();
             // 修正点 3: 'nodes' (allNodes) をモーダル関数に渡す
-            showKeywordDetailsModal(topic, nodes); 
+            showKeywordDetailsModal(topic, nodes);
         } else {
             onTopicClick(topicId);
         }

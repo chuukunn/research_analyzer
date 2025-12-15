@@ -1,0 +1,392 @@
+paper_id,year,has_abstract,title,citation_count
+d3fa78486cbd671b31c72da47322a10da551b937,2026,False,Techniques for interactive visual examination of vessel performance,0
+1c54860f4d52d69eb792ad36e5d8738eba0b4747,2025,False,"Geovisualization: past, present, and future",1
+54d3a82f58731c7e5bb080d49a60848bc9353a7e,2025,True,Designing for Collaboration: Visualization to Enable Human–LLM Analytical Partnership,0
+8b50f924fcb3b6ac023a08e68d91d5c37860f1e8,2025,False,Contextualized visual analytics for multivariate events,1
+b6afa6e2d43b6754bf6661c6fae3ce7a4da90697,2025,False,Integrating human knowledge for explainable AI,0
+c1743ca2e3761774c116dfe17987015f71672dc8,2025,False,Development of a Human Knowledge Integrated Workflow for Context-aware Machine Learning,0
+e2411f2481da07307655aa89922fbb9fb619745f,2025,False,Visualizing game dynamics at a specific time: Influence of the players' poses for tactical analyses in padel,0
+e8436a33561144bbd8c9c8353cc8c8f29f5ac750,2025,False,Visually-supported topic modeling for understanding behavioral patterns from spatio-temporal events,3
+115d2aa2989bfbe86121fad1dc42fe73ca9881e2,2024,True,Human-in-the-Loop: Visual Analytics for Building Models Recognizing Behavioral Patterns in Time Series,6
+249bc241aa971026a9cfd187d48a28d11dca7b43,2024,False,Topic modelling for spatial insights: Uncovering space use from movement data,1
+7031f19f0a62bf21a8ff3f627b4299e2b9eb2a2f,2024,True,Creating Quasi-Maps for Uncovering Space-Time Patterns,0
+a2158cf12631677e03abd7d55fe705a5379cda0a,2024,True,Mapping Time Lags in Epidemics,0
+bb629847e0cedcdc224703376fc50201d1e6c032,2024,True,Mobility Data Science: Perspectives and Challenges,17
+11c26cfcee4adeb81fd3c0ea81fc27877128352a,2023,True,Towards Mobility Data Science (Vision Paper),11
+17b13e4dd85768221b5a4a018d3def874da485e9,2023,False,OF LEVEL-3,0
+18d5e90792571e946c632a24bc9efce1e1c66ce5,2023,True,Episodes and Topics in Multivariate Temporal Data,10
+42fbd2ce7c931e6f9c57c3ece6069aa36bb1dfd1,2023,False,Exploring and visualizing temporal relations in multivariate time series,10
+44783dcf7b140aa1502e952588a43d81f0d4d7c5,2023,True,"The Flow of Trust: A Visualization Framework to Externalize, Explore, and Explain Trust in ML Applications",12
+61f308617eea333a408624b2ed677f2d58cb281f,2023,True,A conceptual framework for developing dashboards for big mobility data,13
+6e5459cf8fb4faaf62c73bb093716c99ad36ed29,2023,False,Extracting Movement-based Topics for Analysis of Space Use,3
+78a93f331ed3402e872f59ad4c40405f6109fd47,2023,False,"Identifying, exploring, and interpreting time series shapes in multivariate time intervals",18
+84f11b01df017255dfe916d0567a2abf7b002f53,2023,True,It's about Time: Analytical Time Periodization,6
+ca80208d53783ee5f61b4098c8742a281f93d3e8,2023,True,Re-interpreting rules interpretability,5
+cf27af1478cd704923a1844dbdc66605d42bd261,2023,False,"The Flow of Trust: A Visualization Framework to Externalize, Explore & Explain Trust in ML Applications",0
+ed0d36eeb90a004eb4c6a23f491a1454a2393200,2023,False,Deep reinforcement learning in service of air traffic controllers to resolve tactical conflicts,10
+090435f6cbfaf492e1586cba28aa28ed50e818e2,2022,True,Supporting Visual Exploration of Iterative Job Scheduling,3
+141f3ee41021291b19d3544665f4693492c564a3,2022,True,Impact of Temporally Downsampling Movement Data on Interpretation,0
+26588edb29802604a7723b76cf9d8fd1c68b55ee,2022,True,Seeking Patterns of Visual Pattern Discovery for Knowledge Building,7
+896681268d2410106dd15e3262c5cc6412898526,2022,False,A learning-based approach for efficient visualization construction,9
+90b2251d55e191ec132f4b01e627cddce49b11e6,2022,True,Explaining deep reinforcement learning decisions in complex multiagent settings: towards enabling automation in air traffic flow management,24
+b84508169391c17e218e3fde3aa78de8824339d7,2022,False,Mobility Data Science (Dagstuhl Seminar 22021),28
+ddbe4abaeab14af635862a3d4b3b798e21a2a4ec,2022,False,A hybrid prediction and search approach for flexible and efficient exploration of big data,0
+edc589776508d82fd1b89af1502d1acd3b528a98,2022,True,Visual Analytics for Human-Centered Machine Learning,26
+1e0d3d862d94b4624d14e31dcf8c95bf25cabed3,2021,False,A theoretical model for pattern discovery in visual analytics,44
+217cb2394310280a737d77a16b0462569c624de4,2021,False,Toward flexible visual analytics augmented through smooth display transitions,23
+2432bc9b31c5d23ce7edfe8000f5c240cde6ef37,2021,False,Toward flexible visual analytics augmented through smooth display transitions,0
+4a51891f651c7b6f3e47653068f56840fae4a8b0,2021,False,What are the topics in football? Extracting time-series topics from game episodes,1
+4db09895dab33e8ef030843ae4b9b8f38ab23409,2021,False,S129 Social deprivation appears to be a barrier to referral for investigation of obstructive sleep apnoea,0
+ae2c2d69f6f841b51ecfb95e93631257b683f49c,2021,False,Visual Analytics of Vessel Movement,11
+e605cdf36ad777393d3a995e6722b23d6c360c52,2021,True,Correction to: Human migration: the big data perspective,0
+03f07542565ee9417dc40288beff56fa7743af73,2020,False,Visual Analytics for Understanding Temporal Distributions and Variations,0
+0a72110559d96215829fc5384d02f726919c09fd,2020,False,Citywide Traffic Analysis Based on the Combination of Visual and Analytic Approaches,29
+1395039b448d61be38f08d1ec4b4b777b69b68fc,2020,False,Conclusion,0
+1da72a278c3aee7887eb6fccfa412b18242dbbd2,2020,True,Supporting Story Synthesis: Bridging the Gap between Visual Analytics and Storytelling,86
+1f8a23697562b001082b147779b5eaefd3513d0a,2020,True,Human migration: the big data perspective,86
+265b611d0a244088dbd353e6a65075dd512b6f18,2020,False,Visual Analytics for Understanding Relationships between Entities,2
+2ca469f3885de091c0e5ecfd1199fffc8973f8f6,2020,True,"Give more data, awareness and control to individual citizens, and they will help COVID-19 containment",68
+38dcc1fcef22e7bb17e1dbeee7221ca7787c344c,2020,False,General Concepts,0
+3e0d30390f715cfe21db8245faf5ed38ff53d4c3,2020,True,Guide Me in Analysis: A Framework for Guidance Designers,32
+40a822fa6e5f295c9e28e3a635579b28aa2707de,2020,True,(So) Big Data and the transformation of the city,30
+54aa1b09270b32f8497157f9464f8bc1cf037827,2020,True,LDA Ensembles for Interactive Exploration and Categorization of Behaviors,32
+55a99840639956010eaa147b5b8abc1f4745b636,2020,True,Visual Analysis of Place Connectedness by Public Transport,17
+59492d686c540960b3bcd747ddc7974870d9d3d7,2020,True,Spatio-temporal visual analytics: a vision for 2020s,12
+5da9cd45b6dc8ff2dd04ca4f2bb277e38e347c80,2020,False,Introduction to Visual Analytics by an Example,0
+5fb6fec6960325493e5dbc248492f2fa1e674029,2020,False,5.2 Visual Analytics for Characterizing Mobility Aspects of Urban Context,3
+703c51d52a4a82b8a2145c7dc5f1962044a65320,2020,False,Visual Analytics for Data Scientists,29
+79164aec34709012be2b7f02f49a29ebc0e363e3,2020,True,"Give more data, awareness and control to individual citizens, and they will help COVID-19 containment",0
+7c943310f7fb80215b41dfe0039a0db88f353107,2020,False,Computational Modelling with Visual Analytics,0
+813100c11e5c70d04949b1c89144bb3f36ca1af3,2020,True,Co-Bridges: Pair-wise Visual Connection and Comparison for Multi-item Data Streams,14
+8c99dc6fc4e27c3c7ad2159f76880097f202e840,2020,False,Visual Analytics for Understanding Images and Video,0
+98640ae27089cb6ade2dff4c7024bb2878c29cc2,2020,True,VASABI: Hierarchical User Profiles for Interactive Visual User Behaviour Analytics,34
+a0f440e94a6858bd83071cdcf253b7569c1600b7,2020,False,Visual Analytics for Understanding Texts,1
+adeaefc4725a6c8427d1602341349a771c825cb7,2020,False,Big Data Analytics for Time-Critical Mobility Forecasting: From Raw Data to Trajectory-Oriented Mobility Analytics in the Aviation and Maritime Domains,4
+b372b6138ab11954aaff95f9edb38e7db3dffe09,2020,False,Visual Analytics for Understanding Spatial Distributions and Spatial Variation,0
+c5cb8c5074e807f999d6b94e5d3045296dee0936,2020,False,Automating and utilizing equal-distribution data classification,2
+cb870b4c7f607a54a015364daf8e55e6ea117e57,2020,False,Big Data Visualization and Analytics: Future Research Challenges and Emerging Applications,1
+d06eddeb43a6f9ea6b8aa454219b8838105bf053,2020,False,Principles of Interactive Visualisation,0
+d20bf7aab7512ca164a03fe35991058676036f9e,2020,False,Big Data Visualization and Analytics: Future Research Challenges and Emerging Applications,36
+d32c355f37beeae3b08755c3cfb73bd5480f5514,2020,False,Visual Analytics for Understanding Phenomena in Space and Time,0
+d3351cd3343ebb61e9b5606ab9998859f5275d41,2020,False,Visual Analytics for Investigating and Processing Data,0
+d5e67760e1bf017b8ae780716bdb214b94aa0424,2020,False,Visual Analytics in the Aviation and Maritime Domains,1
+ea882f865bf958b60ee7e7aadad90a4f1dd57a52,2020,False,Computational Techniques in Visual Analytics,0
+ed736ee1d4a334bec2c045bf3f7f102b4c141474,2020,True,Semantics-Space-Time Cube: A Conceptual Framework for Systematic Analysis of Texts in Space and Time,39
+f043c45e75a40e988b511f7d15dd59268d00cfd4,2020,False,Visual Analytics for Understanding Multiple Attributes,1
+07b27a53e40f7685bc8ec4934e7b8308ae84d535,2019,False,Towards the usefulness of user-generated content to understand traﬀic events,1
+13e0c208bbaff54e9038aa0b784dbbc98679316d,2019,True,Geovisual analysis of VGI for understanding people's behaviour in relation to multifaceted context,0
+1e4cbf3f6fb7d47c4c4be1887f166e9390465724,2019,False,The datAcron Ontology for the Specification of Semantic Trajectories,9
+1f6b71f88bc53093e4a58bd17ed5b0f075a67084,2019,True,Constructing Spaces and Times for Tactical Analysis in Football,63
+2397c919ae834c23eb470fc6fb3a0f44c24eabd0,2019,False,Contextualized Analysis of Movement Events,8
+33cf35057b2a4c41bd27d3cb60380f6206afee7f,2019,True,COPE: Interactive Exploration of Co-Occurrence Patterns in Spatial Time Series,53
+3a768cf024c400b71bf0bbf9beede46dd668ce1e,2019,True,ARGO: A Big Data Framework for Online Trajectory Prediction,17
+4414cf43bd65ddef3ec4890cf3c51e618de6fe81,2019,True,Creating Maps of Artificial Spaces for Exploring Trajectories,0
+69ebbea4d27e43448d4ea149907e311e30cbe73a,2019,True,Resolving Congestions in the Air Traffic Management Domain via Multiagent Reinforcement Learning Methods,7
+7261c95c69d30e37e1231281402c6f00acbdeaad,2019,False,VAST International Program Committee,0
+7a12bcb4985c3c615034bcbd60699f7633c15a5e,2019,False,Towards the Creation of a Threat Intelligence Framework for Maritime Infrastructures,9
+c941253210e358e286b60a29b1a8fd284e4762d5,2019,True,Analysis of Flight Variability: a Systematic Approach,25
+d1d66be989e8f83732457229ea1ed2431a2d7cdb,2019,True,Understanding User Behaviour through Action Sequences: From the Usual to the Unusual,46
+e19887cea31b71ede6f26db6bc41f2308c947505,2019,True,P045 Aggregated patient journeys and no-show rates of oximetry outreach network in east anglia,1
+eee39056394f094ef78b86c084a41215fa370f9e,2019,False,Moving Together: Towards a Formalization of Collective Movement,0
+ff847c59b54a7266d0c30db60068e60a892ff048,2019,False,Visual Analytics for Integrated Evolution of Physical and Cyber-Events: A Case of the World Cup in Social Media,0
+05979fd2af973723e0556903469c2019cc340573,2018,True,Exploring pressure in football,12
+15b444c2c20308373e17b3fbbe45dce462050679,2018,False,Big Data Analytics for Time Critical Mobility Forecasting: Recent Progress and Research Challenges,0
+29592d015f255105723953143f5a226e4da1dbdd,2018,True,Creating maps of artificial spaces to explore trajectories,3
+2e55536cab543ce666c8b1f2c1d7b7d057117d2a,2018,False,Big Data Analytics for Time Critical Maritime and Aerial Mobility Forecasting,5
+4ba3d1157db4e1e360e4b87973c8142dfddc2019,2018,False,"Increasing Maritime Situation Awareness via Trajectory Detection, Enrichment and Recognition of Events",6
+853501cffacf6b161dcaf548a2858fe1536b3f8d,2018,False,Clustering Trajectories by Relevant Parts for Air Traffic Analysis,82
+8631586e81c8c4561654a180ebafa8b27c39690c,2018,False,Big Data Analytics for Time Critical Mobility Forecasting: Recent Progress and Research Challenges.,25
+8ac3af598078a3f2e32d89111adfcd677e3fc4e5,2018,False,Visual Exploration of Spatial and Temporal Variations of Tweet Topic Popularity,7
+8ea88604dab65e35cf4087d3e6332288261cf48f,2018,False,User-Uncertainty : A Human-Centred Uncertainty Taxonomy for VGI through the Visual Analytics Workflow,3
+903c2085dca8459ac154251adac5234b91cf01a1,2018,False,Data Abstraction for Visualizing Large Time Series,34
+afbc0d91e184427dfd3d758eb6b37ce8e5ab7d3a,2018,False,Visual analytics of flight trajectories for uncovering decision making strategies,0
+bc13f37a5593a3a5a0fd03126eedb2205e934f59,2018,False,Designing visualisation enhancements for SIEM systems,1
+bfd04234c64520d4bade28de4de6523518f2f71b,2018,False,Supplemental Material: Designs from Earlier Iterations Understanding User Behaviour in Action Sequences: from the Usual to the Unusual,0
+c3ea8aa472ee33cfd5fa61093fbb8d0dd816d780,2018,False,Viewing Visual Analytics as Model Building,96
+d2ce6fc25b33f1a1abbab6c3c0a8257b9a4c1164,2018,False,Steering data quality with visual analytics: The complexity challenge,59
+d67782ce51211c7d18f1f864004b74d8afd67e6b,2018,True,User Behavior Map: Visual Exploration for Cyber Security Session Data,18
+db59b5b6bc4ec9cb057fc9c0e84c8c7119cdffeb,2018,False,State Transition Graphs for Semantic Analysis of Movement Behaviours,22
+ec712b3abf46d24921c65df144ab661775bcdbc0,2018,False,Bring It to the Pitch: Combining Video and Movement Data to Enhance Team Sport Analysis,157
+ef2fe2d4f95c1f916fa590c7be13e9176c42e243,2018,True,Time-Aware Sub-Trajectory Clustering in Hermes@PostgreSQL,15
+f43594553a7f50aad130d033c1dbeb3691626b31,2018,True,A conceptual framework for studying collective reactions to events in location-based social media,44
+16824fab1d1af497099b94e0050dc63411ebe96d,2017,True,Persistent challenges in geovisualization – a community perspective,62
+1f77dac49dc7e4ac4742751c4fb1cf2e6dfda52b,2017,False,Specification of Semantic Trajectories Supporting Data Transformations for Analytics: The datAcron Ontology,22
+24e40004361b96904d7c33031bf10f71d3f7280a,2017,False,Revealing Patterns and Trends of Mass Mobility Through Spatial and Temporal Abstraction of Origin-Destination Movement Data,114
+417ab4216c84ab40c2641448924067ee97f90098,2017,False,Mining Urban Data (Part C),7
+4a6d46962d3f58d278cfb46d3ddebbb30bf275f5,2017,False,Geographic Data Science,43
+5a9e76d877af325ea00770d6b4692a491514a301,2017,False,A Visual Analytics Approach for User Behaviour Understanding through Action Sequence Analysis,12
+5e8ec98a131e3172b1ef6dde3cc57d9418463306,2017,False,"Teaser Use case ( Shots on Target ) , and collective movement Simplification Aggregation",0
+5ecb712848cfd65fbc5a29647410a8dcb61180e7,2017,False,Dynamic Visual Abstraction of Soccer Movement,52
+6358619c16bcd66811a5ef93ad595eb6a9832ff4,2017,False,Visual analysis of pressure in football,110
+730cec8d8c5bfb630fc457425658a9cf2564f6e3,2017,False,Guest Editorial Introduction to the Special Issue on Visual Analysis for ITS,0
+7aa8c95ee2ffdad2d5a5d3136936c0e484bd333e,2017,False,Visual exploration of movement and event data with interactive time masks,22
+7ccf242314c823cf9aa01a7482e3fc2a6ee88304,2017,False,Visual Analysis of Dyslexia on Search,19
+866f6aff52bc9a54ea7ca2a7ae716a5ab17d8cd9,2017,False,Visual analytics,0
+890ef19b51ee773a7fc0f187372274f93feb10a4,2017,True,Applications of Trajectory Data in Transportation: Literature Review and Maryland Case Study,4
+90e7454778922c9bf5529ff5ab06077a0c93b355,2017,False,Visual Analytics of Mobility and Transportation: State of the Art and Further Research Directions,137
+9bcef45716949f604396fe7d32247cf05ce58eaf,2017,False,Maritime data integration and analysis: recent progress and research challenges,56
+d1519cd2aae9b3e713dd26c2a9a97835a8324e79,2017,False,An Interactive Approach for Exploration of Flows Through Direction-Based Filtering,16
+e64d54d2440774a2bd644a2071776f139a855054,2017,False,Long-standing research challenges in geographic visualization,0
+f0ff03acd8ebd90c39b77480d656c41e6aecc55e,2017,True,Applications of Trajectory Data From the Perspective of a Road Transportation Agency: Literature Review and Maryland Case Study,40
+0d97c86ae72641d199361f3e88b6a017e4cede2a,2016,False,"GeoVisual analytics: interactivity, dynamics, and scale",19
+1df043bb565e74831a87c3eed7550cd9f48eec6c,2016,False,Mining Urban Data (Part B),8
+2116beee773888b30c4859225453815e067a431f,2016,False,Leveraging spatial abstraction in traffic analysis and forecasting with visual analytics,39
+2a37a9d98369f92314949e2c261b362ba0896e6c,2016,False,Message from the VIS Paper Chairs and Guest Editors,0
+39c0e0eb8e00b50af27c86465c317fbc5b76cb55,2016,False,Exploration and refinement of regression tree models with interactive maps and spatial data transformations,1
+708c76b3983ef6c0d6fd4c3236a55d110a8e5e9a,2016,False,Identification of disaster-affected areas using exploratory visual analysis of georeferenced Tweets: application to a flood event,12
+759d5e97b5ab290491e8071d5d7605ecbfcfb663,2016,False,Scalable and privacy-respectful interactive discovery of place semantics from human mobility traces,65
+8101b217a8fcf26e1107a060be7d9d2ed2e336bf,2016,False,INSIGHT: Dynamic Traffic Management Using Heterogeneous Urban Data,5
+9f0c5be9c161901122c77160e84ac0db116f8e1d,2016,False,Coordinate Transformations for Characterization and Cluster Analysis of Spatial Configurations in Football,9
+a1ab71335a02c438535a062e65dae34c12fc1be1,2016,True,Gaining Knowledge from Georeferenced Social Media Data with Visual Analytics,3
+a1fcad747d9f09e6afcf3f681135abf002514cc3,2016,False,Message from the Paper Chairs and Guest Editors.,0
+e59b152462487ea69fbd7931b686de209a205e94,2016,False,Understanding movement data quality,37
+11ecf3e0c85bcd76ac2add15d50381ae01d12004,2015,False,Interactive Cumulative Curves for Exploratory Classification Maps Gennady Andrienko and Natalia Andrienko,0
+48ff3196b582a53369a3dc930ce76c01184798cc,2015,False,Constructing semantic interpretation of routine and anomalous mobility behaviors from big data,7
+53843ae72772ceb7592a1eb1abf7a981d86a7b70,2015,True,EXTRACTING AND COMPARING PLACES USING GEO-SOCIAL MEDIA,11
+644d9662a8597030388231378695f5d011dd74d6,2015,False,SimpliFly: A Methodology for Simplification and Thematic Enhancement of Trajectories,31
+89e0c6d6b12ce4f80c40ec3ee09730277c3cc0f6,2015,False,A Task-Based View on the Visual Analysis of Eye-Tracking Data,34
+a063f881fc14cade88398d8886ca17cc9e852654,2015,False,Twitter Floods when it Rains: A Case Study of the UK Floods in early 2014,23
+c363c01887fa1f1100fa7ebaf264f7cf9a3b94cb,2015,False,Visual Analytics Methodology for Scalable and Privacy-Respectful Discovery of Place Semantics from Episodic Mobility Data,5
+d0093eaff8922b5704c8e1de1aab050c696024a6,2015,False,"Detection, tracking, and visualization of spatial event clusters for real time monitoring",21
+dbcdfaa2c77f58a7a004ae39d817f287e9df3696,2015,False,Real Time Detection and Tracking of Spatial Event Clusters,1
+de9ec2477802e79e1ba8a373d247d3938adbe430,2015,False,A semi-supervised method for topic extraction from micro postings,6
+e054a5774ce44d1e206255753bfc8206121d49c8,2015,False,Visual Analytics for Exploring Local Impact of Air Traffic,21
+eb9fb19a5ab1b48c700bbd6a38873c062b6cd0d5,2015,True,Overview with details for exploring geo-located graphs on maps,16
+ee25608eb32af667a13be3269db099ee43e0600b,2015,True,Exploiting Spatial Abstraction in Predictive Analytics of Vehicle Traffic,21
+ffbb7ab8c67b1b425d65c613e842d16de168d531,2015,False,Visualization Support to Interactive Cluster Analysis,4
+533256267a5d9dfa497a28658de0519a9497f029,2014,False,Wind parameters extraction from aircraft trajectories,33
+87a5dc514c112f0661a98dbb0d4d8a9dba05e044,2014,False,Detecting and tracking dynamic clusters of spatial events,4
+9570a06d33cf589da8fe0824df8f50d8091410a4,2014,False,Analysis of mobility behaviors in geographic and semantic spaces,3
+9fdab208fd3a2b25b86327ed8c6d9eddd268ed36,2014,False,Experiences from Supporting Predictive Analytics of Vehicle Traffic,9
+ac9237b90fe5b0772a48febccd723d9661908949,2014,False,Methods for Analysis of Spatio-Temporal Bluetooth Tracking Data,9
+c532d85530fc7198c4f0b08e0c748e3aeb4861df,2014,False,"GeoVisual analytics, time to focus on time",3
+e09049ae7d2d5acde5f844b682f32973f4480dc9,2014,False,GeoViz: interactive maps that help people think,17
+f318cbc1080a3d16e3cc8afaae2239772930bfea,2014,False,Visualization of Trajectory Attributes in Space–Time Cube and Trajectory Wall,49
+f42b64a70b1a0b7b51ddfd3297d4177a36686603,2014,False,Towards (Re)Constructing Narratives from Georeferenced Photographs through Visual Analytics,51
+0b954026b40001ead505eced1ef72b1aa43fa29c,2013,False,Visual task solution strategies in tree diagrams,57
+0ee742275e6d524d9d0ba8a5ce587de7ca3d7512,2013,False,Transformations of Movement Data,2
+137814202e78e67b3eae6670e08004e2c82a37fb,2013,False,Space Transformation for Understanding Group Movement,73
+139cff5049c41dbad5d469ead69857fd967f9f1f,2013,False,Thematic Patterns in Georeferenced Tweets through Space-Time Visual Analytics,111
+156e151cd9d4d4d228ff12f71d101c5e905d858c,2013,False,Opening up the “black box” of medical image segmentation with statistical shape models,0
+167aeb322f846733e1c074c5eddd4ab6c40b2436,2013,False,Visual Analytics Focusing on Space,1
+1c01b1dc363af9a57f30f90cae9faf5ced232b9e,2013,False,Differential Privacy in Distributed Mobility Analytics,0
+1c80b387d91c0eeb422964604192666c20be3290,2013,False,Towards Acquisition of Semantics of Places and Events by Multi-perspective Analysis of Geotagged Photo Collections,37
+29ef4ae35b74a3d4de26b493aeb588e98d361d6b,2013,False,Air Traffic Analysis,7
+2a0a90454e9d33db2c8cd37c50acfe8df7af0466,2013,False,Exploring Trajectory Attributes in Brest Harbor,0
+2ffdd682100a1dd70eb4e898408adc84c06c53ed,2013,False,Visual Analytics of Movement,315
+30d50ea0f051c43f3d95a0808abf35c123ad2897,2013,False,Towards Privacy-Preserving Semantic Mobility Analysis,18
+3f028e8b8527d409c7dacfd6437a3308026b4c27,2013,False,Visual Analytics Focusing on Spatial Events,10
+422d0218b79926c5432ff713ae418cf605926fe2,2013,False,Discussion and Outlook,3
+4300014db3cbbd1ffea49999ffd0b50d8b4e94dd,2013,False,Using Bluetooth to track mobility patterns: depicting its potential based on various case studies,17
+4a6d09088b69d972ec43123ff3bbdbabe0a7cdb1,2013,False,Visual Analytics Focusing on Time,0
+5862cd265afdb4d00075f9f6039ca7263bcb4965,2013,False,Tracing the German centennial flood in the stream of tweets: first lessons learned,81
+624860d40ec7e1118a1842404c06e2d44fe64a50,2013,False,Opening up the “black box” of medical image segmentation with statistical shape models,23
+68a1a43383c6cb25d8ac3ea91befa5f0f3d909bf,2013,False,Extracting Personal Behavioral Patterns from Geo-Referenced Tweets,19
+6aa54232332149bf18d0efa371077acbf08d3c1a,2013,False,Privacy-Aware Distributed Mobility Data Analytics,5
+6b83fc12597b6c4f65e56a8ba6bd7fe20c0d3820,2013,False,Exploratory analysis of spatial and temporal data,48
+706393bf010ee604ec4ae7d2bc8e97f8ecf3b1d8,2013,False,Report from Dagstuhl: the liberation of mobile location data and its implications for privacy research,22
+7d9fe6ba9d9f0a4b9becde4bbc35f00fc4207698,2013,False,Spatio-temporal analysis of flows in CDC 2013 data,0
+9051bd85f5877b47c18cd2e077629182209dece3,2013,False,Multi-perspective analysis of D4D fine resolution data,7
+91463cf864aa789decccd18642aade2faca5446a,2013,False,EuroFigures - a digital portrait of the EU's General Statistics,0
+9776314c9e4e729313af0cdf37798517a05a33ca,2013,False,Scalable Analysis of Movement Data for Extracting and Exploring Significant Places,99
+9b6719505ee5c18c32a99b9a2a2a9b8f6a928105,2013,False,Exploring Traffic in Brest Harbor by Trajectory Aggregation,0
+b61bf8518ae256622ee1c8ed18a3b521630eae35,2013,False,GIS Visualization Support to the C4.5 Classification Algorithm of KDD,5
+cb0fe4d5fcdf1392d667dc8de1f6d085337c9ebe,2013,False,Extracting Semantics of Individual Places from Movement Data by Analyzing Temporal Patterns of Visits,38
+cde0855cb750d15790c7dbd1f657a90fae9d2630,2013,False,"Visual analytics of movement: An overview of methods, tools and procedures",349
+d903d46ef031a5652bf94b4379427211951ae9d8,2013,False,Visual Analytics of Movement: A Rich Palette of Techniques to Enable Understanding,10
+db79319f037a3eb7e281496ef855a45b27dd1d21,2013,False,Semantic trajectories modeling and analysis,569
+e29b6f30a38733e674caea84d1bee4586f8c248b,2013,False,Exploring Trajectory Attributes in Brest Harbor Gennady Andrienko and Natalia Andrienko,0
+e453c70351208e009bb93ae99109ea5407854573,2013,False,Visual Analytics Focusing on Movers,1
+ed1557edc57e36e76d24677ff83651ae67d4be6b,2013,False,Visual Analytics Infrastructure,1
+f945130ace5318a5c1bdf30c083aa1c2fe961e2e,2013,False,Privacy-Preserving Distributed Movement Data Aggregation,30
+0293b6baf280e20ca202d9edd01607ed52783f83,2012,False,Identifying Place Histories from Activity Traces with an Eye to Parameter Impact,33
+04bfc768edfd38faad59c25995999191dbc169cc,2012,False,Visual Analytics Methodology for Eye Movement Studies,212
+147f2aeec2b459b55e84eab483b30bb2cea8476a,2012,False,A visual analytics framework for spatio-temporal analysis and modelling,82
+383440c0c0c4012f36f696285a5e69772e7df413,2012,False,Stacking-Based Visualization of Trajectory Attribute Data,321
+71704bdd3d9bb9000145767a9577d258e38566d0,2012,False,Analysis of fire causes spatial and temporal distribution in France,0
+827850470b8633b5c78dd318d91c2b39c82d8124,2012,False,Visual analytics methods for categoric spatio-temporal data,95
+8d0236d1a734cd51a90172e61a8ed32e13e28fa8,2012,False,Privacy Issues in Geospatial Visual Analytics,23
+93693f987887c64f489b201368f3bbb1e0ebc7c3,2012,False,Analysing the spatial dimension of eye movement data using a visual analytic approach,29
+9e70d3919559d9a9cd141bcc131bb68ecf56baa2,2012,False,Visually exploring movement data via similarity-based analysis,68
+ca510b49ab006a20cc3540a3ebd257721189417c,2012,False,Interactive exploration of events and presence of people in space and time through KD-photomap,0
+d435163b35f6726415371ed7ec1a8bf9961e2cb3,2012,False,Interactive visual analysis of event-based movement data extracted from phone call records,0
+ebf9bab6a5603cef4e0742b05400784e1b8b8b64,2012,False,Visual Analytics for Understanding Spatial Situations from Episodic Movement Data,87
+fbb2c27a4b38b083e9beeb3716fe142ad8cc9271,2012,False,Scalable Cluster Analysis of Spatial Events,9
+02dc4dd2751248e664a74371c06a9bbb640cf888,2011,False,GeoViz Hamburg 2011 : Linking geovisualization with spatial analysis and modeling,1
+10f5a7aace444acf7bf7dc1d9d58a54901b0079e,2011,False,Solving Problems with Visual Analytics,137
+12690823804c74f8ffa73a9d9dc0e7ddc0eb1237,2011,False,Visually exploring movement data via similarity-based analysis,1
+249d9aa5dea6db247bf19ce7895af3ad859cc026,2011,False,Composite density maps for multivarate trajectories,0
+2cdcc7f972ea2a923359e586816a7e291d5407cf,2011,False,KD-photomap: Exploring photographs in space and time,7
+41eec1da680bde19a1c645417b96abf395cc86dc,2011,False,Exploring spatiotemporal patterns by integrating visual analytics with a moving objects database system,21
+45a89f364adc4598e37a1914719baedf944f14c6,2011,False,A conceptual framework and taxonomy of techniques for analyzing movement,162
+461d5338d09c6b0c17c9e157a4725225e0bd6972,2011,False,An event-based conceptual model for context-aware movement analysis,111
+4f21bab421b3fa600bbe75bd53d13b41132225b5,2011,False,From movement tracks through events to places: Extracting and characterizing significant places from mobility data,140
+7c3d5e8ea3a1fbe3c355e4063a1e5befbd21d5d6,2011,False,GeoViz - Linking Geovisualization with Spatial Analysis and Modelling,2
+a2dbbd2dc28c8e042a5f82d272513bdc885e4ad3,2011,False,Analytical workflow of monitoring human mobility in big event settings using Bluetooth,58
+a89e56012f8a723df4d186ce8a8016b155b04377,2011,False,Challenging problems of geospatial visual analytics,96
+bd93ec086fbf2ace83828909c1c63293e720be67,2011,False,Composite Density Maps for Multivariate Trajectories,165
+cd5726cb9e9a81ac8175986839d0a5fb7596e387,2011,False,Interactive Analysis of Object Group Changes over Time,27
+ded4b3097c92775ce93e328c048f0b49de814ba4,2011,False,Spatial Generalization and Aggregation of Massive Movement Data,411
+e07cd2596b6c9e44f36a2f723d723d5dfed6d68e,2011,False,Exploring City Structure from Georeferenced Photos Using Graph Centrality Measures,14
+eb936ba5278ff0efce985883cb32e6fd64f54d67,2011,False,Visual Mobility Analysis using T-Warehouse,28
+ebec328e7695ad5ab14722ac6482a1757cd8fc96,2011,False,"6th IEEE Conference on Visual Analytics Science and Technology, IEEE VAST 2011, Providence, RI, USA, October 23-28, 2011",0
+03e0a102a2b2c999782a61cf8a1d74e43300e8fe,2010,False,GeoVisualization and the Digital City (,9
+15248d7d35eb12bde60217edcd70e1dec2bb9f97,2010,False,Discovering bits of place histories from people's activity traces,48
+1cefbcb23b8c993c5a81fb2df5e603e2eb283839,2010,False,A General Framework for Using Aggregation in Visual Exploration of Movement Data,96
+238769d34be2a2e0568c3e77e55ecaf51428088a,2010,False,Interactive cluster analysis of diverse types of spatiotemporal data,47
+432469754e244ce2a6ca474212b16ee81dea3654,2010,False,"Space, time and visual analytics",459
+4e3f864cafd0dda65f011fd9141a4b0fa8ddad32,2010,False,Extracting Events from Spatial Time Series,22
+5c3cd96685a4edbda99fc5f7c0560fe603a3f728,2010,False,Event-Based Analysis of People's Activities and Behavior Using Flickr and Panoramio Geotagged Photo Collections,130
+5e30e2631f454888c6e3969fabe09bbd451e21ee,2010,False,GeoVA(t) – Geospatial Visual Analytics: Focus on Time,23
+656062bad78daddb022f6b3e158cc4113b919eb8,2010,False,Sammon ’ s Projection for Clustering Complex Geographical Objects,4
+711fb884c02326f813efb1228e3b24b42aa4f6a7,2010,False,Finding Arbitrary Shaped Clusters with Related Extents in Space and Time,15
+a60ccbf506727dd11d8db3cbe9d26c0d95ff271f,2010,False,Visuelle Bewegungsanalyse in Video- und Geodaten,0
+a8897a898acf981e3029b6a8044405b65d8b89a8,2010,False,Visual analytics on eye movement data reveal search patterns on dynamic and interactive maps,1
+bedd52efbdfdc0acb23a0b6bec7d012c892d3d9a,2010,False,A Generalisation-based Approach to Anonymising Movement Data,6
+cc3b33c5900cb13ab8767c6597bf6020e70b8cbc,2010,False,Discovering Landmark Preferences and Movement Patterns from Photo Postings,100
+d56bdc61b506d054739b94845af6883c2dafc68e,2010,False,Poster: Dynamic time transformation for interpreting clusters of trajectories with space-time cube,24
+defc0e3c96dcaf6c1f10eda0231c46578ad58cd4,2010,False,Editorial - GeoVisualization and the Digital City,19
+e943eaecb010f7d661e899d81627df2b86999470,2010,False,Space and time,217
+0566e395266b96956e39109f6121b4a93a1b07e0,2009,False,Information Visualization IV 2009,0
+06429d3d408cb4b08a95360730bceaeda9202cc3,2009,False,Interactive visual clustering of large collections of trajectories,266
+074c578aa02446f364d72014eeb852dce75d0d4c,2009,False,Analysis of Community-contributed Space- and Timereferenced Data by Example of Panoramio Photos,2
+26e277997c1e054f167495c7117519743f62d273,2009,False,Analysis of community-contributed space-and time-referenced data ( example of flickr photos ),3
+33750ab5a36017ae04ab13e4270f56a0ea058d6a,2009,False,Building Visual Summaries of Clusters of Trajectories,0
+386ae250a88feb717cf8a462a6bac4909abef115,2009,False,Interactive Cumulative Curves for Exploratory Classification Maps,1
+3db25f50080e5df4aac4fd5a349d637fb2779f7c,2009,False,Analysis of community-contributed space- and time-referenced data (example of flickr and panoramio photos),28
+3ec4ad1085f0f5f0bf43ed7ea293c34ec75eeb8b,2009,False,Movement data anonymity through generalization,209
+4dc26895da7e48deba751f579659b475d014919b,2009,False,Uncovering Interaction Patterns in Mobile Outdoor Gaming,27
+6b2f6f45f1f2535e78b84656794b7b6a54554b8f,2009,False,Interactive spatio-temporal cluster analysis of VAST challenge 2008 datasets,8
+866bdb3a31fa5ff27ef0d3c42b2aa7b768a3b328,2009,False,Analysis of community-contributed space-and time-referenced data (example of Panoramio photos),34
+98191336d78a6ec8e12d65f36c06efa41306d76d,2009,False,"Visual Analytics for Geographic Analysis, Exemplified by Different Types of Movement Data",12
+cd53a55cf28cae496fdab8826d71d19f78f420a3,2009,False,"13th International Conference on Information Visualisation, IV 2009, 15-17 July 2009, Barcelona, Spain",0
+f41ca5e539ec3c6858f9e298291217a49c82b844,2009,False,Special Issue: Geospatial Visual Analytics,4
+f56ae4639eea37c28313a32c4c270d8b1f5ade59,2009,False,A Visual Analytics Toolkit for Cluster-Based Classification of Mobility Data,21
+03fd5543a4a936bd713d5b49eadd7db2260097a1,2008,False,Evacuation trace Mini Challenge award: Tool integration analysis of movements with Geospatial Visual Analytics Toolkit,4
+0c58724e03ccf52aa93a06546905f0c2888a3515,2008,False,"12th International Conference formation Visualisation, 2008. IV '08",0
+10640ea06b54c22056213ed8b2983a9a49e0c6b0,2008,False,"Geovisualization of Dynamics, Movement and Change: Key Issues and Developing Approaches in Visualization Research",192
+1208d09d8a28867b0712ab5fc623fddf3a930fdb,2008,False,Visually driven analysis of movement data by progressive clustering,245
+33d7831ef40b4cec4bfc8190ea11f46c272f5c08,2008,False,A visual analytics approach to evaluate inference affordance from animated map displays,6
+37f07e93ce859973177192661fdceadd8b6aefa7,2008,False,Informed Spatial Decision Making Using Coordinated Views,3
+44526e29632c4c04ffee9f716f8cd6e47b4ac5c9,2008,False,Visual Analytics Methods for Movement Data,10
+48480c21ed5bccd29091b688913c67b6748a03bc,2008,False,Interactive visual interfaces for evacuation planning,12
+4d50c9641a2af66e07a101b9aca1c901e3997805,2008,False,Spatio-temporal aggregation for visual analysis of movements,256
+4e1abbdde8c2d6df51c8b5c8517552270f5234cc,2008,False,Computer Cartography and Cartographic Knowledge Gennady Andrienko and Natalia Andrienko,0
+56b430f3fff751dae307abc0268c1c1de85e8349,2008,False,Analysis of Movements with Geospatial Visual Analytics Toolkit,0
+6e45ba3acf32a467b77ebfc35a50cad3d087f4ed,2008,False,Supporting visual exploration of massive movement data,5
+6f6d08ab4969ec2c175bb74a9dd1e7572aa55e5c,2008,False,Uncovering Interactions between Moving Objects,19
+7018b98ced841245713416885d9b35bfcc7ec40e,2008,False,A Visual Analytics Approach to Exploration of Large Amounts of Movement Data,25
+7af5195df4c10b1738202808a255bd2e68d89625,2008,False,Visualization and classification of urban change patterns on the basis of state-space transitions,3
+8c3613f0ea8d9c3dfdcfa28257f05d3b4227e612,2008,False,Dynamic aggregation on grids for interactive analysis of multidimensional spatial information,2
+a16794d97ca1b76c57df590858541ceff633b938,2008,False,Exploration of Massive Movement Data: a Visual Analytics Approach,24
+b0ad80588a9da938a1daed8b30129359b5754e2e,2008,False,Basic Concepts of Movement Data,112
+b713fcecf87e910f84ecd081235218da053ff0b1,2008,False,Geo-visualisation support for environmental modelling and decision making,0
+d4911e36cd403fc9ed360b72004e2c8abf58f12e,2008,False,"CHOROPLETH MAPS : CLASSIFICATION REVISITED Gennady Andrienko , Natalia Andrienko , and Alexandr Savinov",0
+edc62dd7276e23c81219678ae7f3ea6bf3e19e24,2008,False,"Visual Analytics: Definition, Process, and Challenges",1182
+f38f0175965b9a8e1250890ed6b3716c6fed6779,2008,False,Novel Method to Measure Inference Affordance in Static Small-Multiple Map Displays Representing Dynamic Processes,129
+002e253f193af637704a0145e1524f4ac4868244,2007,False,CHAPTER 42 Interactive Maps for Exploring Spatial Data,24
+141e9d049c8a2f698533b76667b22c6e0b7e299c,2007,False,Intelligent Visualisation and Information Presentation for Civil Crisis Management,33
+224f47dc00919eaaed081c292a0b820f60754018,2007,False,Towards a European Forest Information System,5
+24170ddd15f6d0ad1b5d15fe9fcea2d4309c4d8b,2007,False,Visual analytics tools for analysis of movement data,365
+2e810d60fb48a711aadcb4d0d585348a412da654,2007,False,Extracting Patterns of Individual Movement Behaviour from a Massive Collection of Tracked Positions,21
+3a8c6a1d39465236571e2700d671b3cf0481e7da,2007,False,Coordinated Multiple Views: a Critical View,59
+41a505100bff4eca80ca045aea4448bd8c50518a,2007,False,A Framework for Decision-Centred Visualisation in Civil Crisis Management,5
+4688e44e14893e3b91441e20fb151ff58692c930,2007,False,Implementing Visual Analytics Methods for Massive Collections of Movement Data,0
+66975386bc8a1822059a87fc10cc891f91c4a4d6,2007,False,Designing Visual Analytics Methods for Massive Collections of Movement Data,133
+66cbebebc13b48ed08dd6445c536cde70afd3c74,2007,False,Multimodal Analytical Visualisation of Spatio-Temporal Data,3
+792b5e9cc4ca2afe26c9ac6efa2818b03adbb27f,2007,False,Chapter 13 - Visual Analytics Methods for Movement Data,33
+8505df57cdec0b17d5db4f91e921aa59601c0254,2007,False,2006 Reviewers List,0
+9586548af7d0c1917a0f111bff78938a4731d988,2007,False,Geovisual analytics for spatial decision support: Setting the research agenda,172
+a14bb7ade309860f2cde1d3c7463999e577a6c1d,2007,False,Geovisualization and synergies from InfoVis and Visual Analytics,8
+a9a6ef19521e3b0944272c2057e8c4feabe723ad,2007,False,Visualization Summit 2007; The Visualization Summit; Information visualization;,0
+d005a7d8a56c692f3e1183b317b5707196ea43fd,2007,False,The use of simulation model FORRUS-S in the ecological management in forestry : strategic and tactics planning,0
+d3525d576e3a5d7ac9c0dd7468fbe049ea15126a,2007,False,Visualization Summit 2007: Ten Research Goals for 2010,25
+ddd296cce44a4bb5190da5f42ebde0428764a042,2007,False,Visualization Summit 2007; ; Information Visualisation;,0
+e58fb7c8d309101ed47a8d903563cbeb4c201788,2007,False,Visual Analytics Approach to User-Controlled Evacuation Scheduling∗,25
+ef79551e85d8821c0ec05e427cd9975aaf7b26c6,2007,False,Similarity Search in Trajectory Databases,167
+f73da038fe121e56fca15cadceea35398ba95063,2007,False,Chapter 2-Basic Concepts of Movement Data,1
+058c36417eca7181750b23cfb3490cfa707eb263,2006,False,"A Framework for Using Coordinated Displays for the Analysis of Multidimensional, Spatial, and Temporal Data",5
+2ea62c6aeadd2a5a83de098ba502831e6fb80a4d,2006,False,Proceedings of the 4th International Conference on Coordinated & Multiple Views in Exploratory Visualization,8
+4b2a3bd22941d8783b9a73c89ea0c65e175b0524,2006,False,European Research Forum Panel Session Envisioning Research Challenges in Visual Analytics,3
+a4baa3e8bfd70ced25b870ae8eb944b6ae57fd17,2006,False,Mining spatio-temporal data,50
+af35552790bd3c005f1e77d012f1979fe76870e8,2006,False,The Complexity Challenge to Creating Useful and Usable Geovisualization Tools,17
+c1a3ec78c6eab3c1f118f7e191749a7eb1457fc1,2006,False,Exploratory analysis of spatial and temporal data - a systematic approach,0
+d2654d3c644c92374a98d386a0ae6a76ccd89196,2006,False,Reactions to geovisualization: an experience from a European project,30
+1db1eb87fe2725173a702fd3fe2232ebbff507da,2005,False,IV 2005: Ninth International Conference on Information Visualisation,0
+7d6a755618fb1b7ad4f710c5c3019e47319ed494,2005,False,Blending Aggregation and Selection: Adapting Parallel Coordinates for the Visualization of Large Datasets,25
+87f275f09c3851f2ed213e11f3aeacf67a371078,2005,False,Visual exploration of the spatial distribution of temporal behaviors,61
+95999e0d59402a95011e8b0e73c7e62a86ad5701,2005,False,"Visual Data Exploration : Tools , Principles , Problems",7
+96ccd1886aca2504740b064c4a6cb7fa3ced0a3d,2005,False,Geovisualization of forest simulation modelling results: A case study of carbon sequestration and biodiversity,3
+99bb6e8dee2b4a3849d485525b509c795c7002bf,2005,False,Impact of Data and Task Characteristics on Design of Spatio-Temporal Data Visualization Tools,28
+ae77d40af092aede2ad925604c6560ff4addfd20,2005,False,Exploratory Analysis of Spatial and Temporal Data: A Systematic Approach,190
+dd72856e4a4b1d2340ec6c751fa26d628e60460c,2005,False,A Concept of an Intelligent Decision Support for Crisis Management in the OASIS project,8
+f392eb414b1934ca12ba8ac4536c9382cb0811b7,2005,False,The European Forest Information System-an Internet based interface between information providers and the user community,13
+01ceb51a92c62f495874b879778b0235d12f5e0f,2004,False,Visual Mining of Spatial Time Series Data,8
+03ee5bed0c548d4506f353d3b227269d2a80f84d,2004,False,Cumulative curves for exploration of demographic data: a case study of Northwest England,12
+3fc938203d2c75cb5ef41331b85ca48f2573bae1,2004,False,INTERACTIVE MAPS FOR VISUAL EXPLORATION OF GRID DATA,1
+420252da6ed8e6d67814c238440110654bf2fc14,2004,False,Interactive visual tools to explore spatio-temporal variation,64
+503ae371b457eb2e80410f806e497701b0dc7201,2004,False,Parallel coordinates for exploring properties of subsets,47
+581171e6b105196088fd81c9c683500a6d6a1bae,2004,False,Creating Instruments for Ideation: Software Approaches to Geovisualization,19
+7fed1818861cb77b9e3f08f125360854a336e758,2004,False,GEO-VISUALIZATION SUPPORT FOR MULTIDIMENSIONAL CLUSTERING,3
+fc77ef1df53a33c75e49b89919e28d42530eae95,2004,False,Interactive analysis of event data using space-time cube,204
+16a9e65ca519925cc89638fb0b56ab1dc4757622,2003,False,Coordinated Views for Informed Spatial Decision Making Natalia Andrienko and Gennady Andrienko Spatial Decision Support Team,0
+34ba9bdc015e1ace9897c73409f373392f7a7497,2003,False,Coordinated views for informed spatial decision making,18
+4a15547b04183c58eafb97bd560dfdaec449987a,2003,False,Informed Spatial Decisions Through Coordinated Views,71
+53aefafc0f6b8ab18be1c9d1d4526ceb208bbf6f,2003,False,Interactive maps for visual exploration of grid and vector geodata,23
+a023f195b8378d261258f30ab431c20012985dc2,2003,False,Tools for visual comparison of spatial development scenarios,11
+a080ca658613b80c6b3593f5ea12d8f297a88116,2003,False,Exploratory spatio-temporal visualization: an analytical review,473
+b0ff4e85eac578e043e69abd6317cf69714e8716,2003,False,GIS for Everyone,23
+b84a3523d4d71dcde3bdb460e4d78d9f41024275,2003,False,European Forest Information System — EFIS. a Step towards Better Access to Forest Information,7
+ec4851c08f8a02b2616d55e009d4f254e7fdb2f1,2003,False,Building Spatial Decision Support Tools for Individuals and Groups,57
+f1b6bae52ed69cf74e0a137b5a8dc34f3ef4f31a,2003,True,Special Thanks to CG&A's Reviewers,0
+5758ccda064d10e10f81167bbb78234f3d4d3eb1,2002,False,Data and Task Characteristics in Design of Spatio-Temporal Data Visualization Tools,2
+626dc6a95d57c95d1b98fc6a2bfd8f5d854b9d81,2002,False,Interactive visual tools for spatial multicriteria decision making,9
+665f5735abf0624a6d3046b4ca5bc3a8f70f6cf0,2002,False,Integrating forest simulation models and spatial–temporal interactive visualisation for decision making at landscape level,29
+8516a0d78a4f044f2a6a96737411fb32b32655c3,2002,False,"Case studies: Commercial, multiple mining tasks systems: Kepler and Descartes",0
+b733ee58925a05c52fb6651be317ba8b1c7784c2,2002,False,Intelligent support of visual data analysis in Descartes,5
+c8f1533c58b14df6f1a2e90fc56b1279cc2b0dde,2002,False,Testing the Usability of Interactive Maps in CommonGIS,136
+eb43d88455ba68c16c4b332749cefcd6436e3c44,2002,False,"Contaminated industrial sites, real-time monitoring, knowledge-based systems, modelling, knowledge acquisition",0
+046a6d6ef7217e08ca6ffb90a09ac91e21580f99,2001,False,Exploring Changes in Census Time Series with Interactive Dynamic Maps and Graphics,24
+0a880e0f2d04a7cd1323fde3fc32f5fdcca509f5,2001,False,Constructing Parallel Coordinates Plot for Problem Solving,62
+29d6bded871379e5a42114a05849e001103628c7,2001,False,Exploring spatial data with dominant attribute map and parallel coordinates,65
+423caacd3e00b6985b31c0dae32ceb4c0cd0d9ae,2001,False,Intelligent Visual Data Analysis Service in the Internet,1
+604ed267361973bb5680b40929d57988aed7bc50,2001,False,Representation and its Relationship with Cartographic Visualization,112
+63c7c1c9df4eb115464d21af9bcd5197844ee904,2001,False,Map-centred exploratory approach to multiple criteria spatial decision making,294
+9add2deca65bbac3717c36c6454080d64c3a23d3,2001,False,Interactive visual tools to support spatial multicriteria decision making,11
+d5d79e1e34633ffd468e593d6a204d484cfb4312,2001,False,Intelligent Support for Geographic Data Analysis and Decision Making in the Web 116 interactive tools for visual analysis of geographic data ( Andrienko and Andrienko 1999 ) and spatial decision,40
+e53607901a9b8d2444d9c63141effcbb43295d97,2001,False,Exploratory Analysis of Spatial Data Using Interactive Maps and Data Mining,50
+f6db685e65707c80af453001c56daa2be74f637a,2001,False,Constructing Parallel Coordinates Plot for Problem Solving Gennady Andrienko,2
+78e5fc45ba82ac2d79c08ca58ad56a200ab5f628,2000,False,Supporting visual exploration of object movement,55
+7cf1c314abdcbe548aab410d892e47c19a7f9246,2000,False,The future Web and Europe – the Web and future Europe,0
+86a5c3b6a40f12ba3d9d89520bc0f110dfbbeecb,2000,False,Visualization of spatio-temporal information in the Internet,29
+bc80ea5fc967d8c5dea08bbf58b92b08b1de0173,2000,False,Java Tools for Exploratory Cartographic Visualization in the Internet,1
+d0711f7f45a7b617adec7db1678f7cd32eec976c,2000,False,Web-based Spatio-Temporal Presentation and Analysis of Thematic Maps,1
+0ca8d56db2bc88e91818f6ac7ea0c76eb1dc038d,1999,False,Thematic Mapping in the Internet: Exploring Census Data with Descartes,5
+2bc2251974ac01d589e36744434129edc1bbdaa7,1999,False,Knowledge-Based Visualization to Support Spatial Data Mining,55
+3c406d13d43f856806999e8d1de462e3aac7b540,1999,False,Knowledge engineering for automated map design in DESCARTES,11
+72d80d5f29300c45e43e7f0e91edb32e66b16d4a,1999,False,Interactive maps for visual data exploration,477
+773e3546e37f46f5ce8cbe9815cfd9ccb253182c,1999,False,Internet mapping for dissemination of statistical information,21
+785a9ac6463bb177be394d2997f3847a1b1a6bf7,1999,False,Data Characterization Schema for Intelligent Support in Visual Data Analysis,11
+82242a02d6d43a27ad9cdceea0142b916f3ac670,1999,False,Making a GIS Intelligent: CommonGIS Project View,30
+b700615e11b5998579672944f43636dcf9355716,1999,False,Data mining with C4.5 and interactive cartographic visualization,33
+bb8982a348bddbfd925794c17d189be5fcbda32c,1999,False,IRIS: an Intelligent Tool Supporting Visual Exploration of Spatially Referenced Data,1
+c1364dd0335da2aba9ed7a46d52b63b8452bb2f7,1999,False,Thematic Internet Maps For Cities: Data Analysis And PUBLISHING WITH DESCARTES,1
+ecca58ba3f2651b3abab7b3361065787badd3005,1999,False,IRIS: A Tool to Support Data Analysis with Maps,1
+63a5f32f1fb8245e61361c50739721153a2f50ae,1998,False,IRIS: intelligent visualization for data exploration support in GIS,1
+ba639975d0d2bfae5ea8b860c188c02d1c34fa0d,1998,False,Intelligent visualization and dynamic manipulation: two complementary instruments to support data exploration with GIS,20
+59acd823980d8029c95d32b1a531c0c058410890,1997,False,Research issues in intelligent data visualisation for exploration and communication,2
+d6c18ceb4cf1c45555e82f7791750fb66f15d6b3,1997,False,Knowledge-based support for visual exploration of spatial data,8
+83f691cc314c2ce73acc4319742093aa1b0ae2fb,1994,False,AFORIZM Approach: Creating Situations to Facilitate Expertise Transfer,2
+87f3e5970e77016f907728a496ab3c65c7d1a9bc,1994,False,The intellectual hypertext for knowledge transfer,0
+1974b465a4bbe30d047cd40c275c71e045574f6e,1993,False,Automatized systems for knowledge acquisition,1
+0fa642405e3cf6ba1c1ebf1121dc51235595c4a9,0,False,City Research Online,205
+22b4f702cef1a6cf3b38364375d53114b93fe614,0,False,OF LEVEL-3,0
+43e135948a92396c2f820bb3645fddfe4db23f05,0,False,City Research Online,1
+579a8c5c2e1a007891d9855969fd46297f53074f,0,False,AGGREGATED PATIENT JOURNEYS AND NO-SHOW RATES OF OXIMETRY OUTREACH NETWORK IN EAST ANGLIA,0
+5ac6cb8a96440130340744900892702da8408724,0,False,Visual Analytics for Transportation : State of the Art and Further Research Directions,2
+62f27a113679a31ea94815ab8264cce02d1d48d5,0,False,Transparency & Explainability in higher levels of automation in the ATM domain,1
+646a996c5dab5bf32f0e0d2dea357ea3b077631c,0,False,City Research Online,0
+8af78dfa4899dff921bf9a568f2abd887cc9e639,0,False,OF LEVEL-3,0
+99b7c7a6806c269e174ca1480e5f3c5efc2fcb8c,0,False,OF LEVEL-3,0
+bcd57da8eda7dfa5f8cdcf5f8f45a35e9430f9d1,0,False,A Hybrid Human-Centric approach to combining Rule-based and Attribute based Explanations ⋆,0
+c3f2a14ecc220ce1b428d7a4ba22f8ae530c9a54,0,False,Visual Analytics of Movement and Transportation : State of the Art and Further Research Directions,2

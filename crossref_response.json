@@ -1,0 +1,444 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message-version": "1.0.0",
+  "message": {
+    "indexed": {
+      "date-parts": [
+        [
+          2025,
+          5,
+          9
+        ]
+      ],
+      "date-time": "2025-05-09T04:01:51Z",
+      "timestamp": 1746763311729,
+      "version": "3.40.5"
+    },
+    "reference-count": 36,
+    "publisher": "Informa UK Limited",
+    "issue": "2",
+    "funder": [
+      {
+        "DOI": "10.13039/501100002347",
+        "name": "Federal Ministry of Education and Research",
+        "doi-asserted-by": "publisher",
+        "award": [
+          "101092749"
+        ],
+        "id": [
+          {
+            "id": "10.13039/501100002347",
+            "id-type": "DOI",
+            "asserted-by": "publisher"
+          }
+        ]
+      }
+    ],
+    "content-domain": {
+      "domain": [
+        "www.tandfonline.com"
+      ],
+      "crossmark-restriction": true
+    },
+    "short-container-title": [
+      "International Journal of Cartography"
+    ],
+    "published-print": {
+      "date-parts": [
+        [
+          2025,
+          4,
+          3
+        ]
+      ]
+    },
+    "DOI": "10.1080/23729333.2025.2475410",
+    "type": "journal-article",
+    "created": {
+      "date-parts": [
+        [
+          2025,
+          3,
+          26
+        ]
+      ],
+      "date-time": "2025-03-26T13:30:23Z",
+      "timestamp": 1742995823000
+    },
+    "page": "224-234",
+    "update-policy": "https://doi.org/10.1080/tandf_crossmark_01",
+    "source": "Crossref",
+    "is-referenced-by-count": 0,
+    "title": [
+      "Geovisualization: past, present, and future"
+    ],
+    "prefix": "10.1080",
+    "volume": "11",
+    "author": [
+      {
+        "ORCID": "https://orcid.org/0000-0003-3313-1560",
+        "authenticated-orcid": false,
+        "given": "Natalia",
+        "family": "Andrienko",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "Fraunhofer Institute IAIS",
+            "place": [
+              "Sankt Augustin, Germany"
+            ]
+          },
+          {
+            "name": "School of Mathematics, Computer Science and Engineering, City St George's University of London, London, UK"
+          }
+        ]
+      },
+      {
+        "ORCID": "https://orcid.org/0000-0002-8574-6295",
+        "authenticated-orcid": false,
+        "given": "Gennady",
+        "family": "Andrienko",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Fraunhofer Institute IAIS",
+            "place": [
+              "Sankt Augustin, Germany"
+            ]
+          },
+          {
+            "name": "School of Mathematics, Computer Science and Engineering, City St George's University of London, London, UK"
+          }
+        ]
+      }
+    ],
+    "member": "301",
+    "published-online": {
+      "date-parts": [
+        [
+          2025,
+          3,
+          25
+        ]
+      ]
+    },
+    "reference": [
+      {
+        "key": "e_1_3_3_2_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1109/TVCG.2019.2952129"
+      },
+      {
+        "key": "e_1_3_3_3_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/17489725.2010.532816"
+      },
+      {
+        "key": "e_1_3_3_4_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1145/3206505.3206557"
+      },
+      {
+        "key": "e_1_3_3_5_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/13658816.2010.508043"
+      },
+      {
+        "key": "e_1_3_3_6_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/B978-008044201-3/50010-4"
+      },
+      {
+        "key": "e_1_3_3_7_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1111/cgf.14515"
+      },
+      {
+        "key": "e_1_3_3_8_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/978-3-030-56146-8"
+      },
+      {
+        "key": "e_1_3_3_9_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.is.2015.08.007"
+      },
+      {
+        "key": "e_1_3_3_10_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.5194/isprs-annals-V-4-2022-205-2022"
+      },
+      {
+        "key": "e_1_3_3_11_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.earscirev.2023.104438"
+      },
+      {
+        "key": "e_1_3_3_12_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.5220/0009355703250332"
+      },
+      {
+        "key": "e_1_3_3_13_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/23729333.2019.1613073"
+      },
+      {
+        "key": "e_1_3_3_14_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/23729333.2017.1302910"
+      },
+      {
+        "key": "e_1_3_3_15_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/ijgi9070439"
+      },
+      {
+        "key": "e_1_3_3_16_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3389/feart.2023.1230973"
+      },
+      {
+        "key": "e_1_3_3_17_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0198-9715(01)00046-1"
+      },
+      {
+        "key": "e_1_3_3_18_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.5194/ica-proc-4-37-2021"
+      },
+      {
+        "key": "e_1_3_3_19_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1093/jamia/ocae212"
+      },
+      {
+        "key": "e_1_3_3_20_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1559/1523040053722150"
+      },
+      {
+        "key": "e_1_3_3_21_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1111/j.1467-9671.2012.01344.x"
+      },
+      {
+        "key": "e_1_3_3_22_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.sbspro.2011.07.029"
+      },
+      {
+        "key": "e_1_3_3_23_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s42489-019-00003-5"
+      },
+      {
+        "key": "e_1_3_3_24_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/17538947.2018.1501106"
+      },
+      {
+        "key": "e_1_3_3_25_1",
+        "doi-asserted-by": "crossref",
+        "unstructured": "Jansen Y. Dragicevic P. Isenberg P. Alexander J. Karnik A. Kildal J. Subramanian S. & Hornb\u00e6k K. (2015). Opportunities and challenges for data physicalization. Proceedings of the 33rd Annual ACM Conference on Human Factors in Computing Systems.",
+        "DOI": "10.1145/2702123.2702180"
+      },
+      {
+        "key": "e_1_3_3_26_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1038/s42256-019-0088-2"
+      },
+      {
+        "key": "e_1_3_3_27_1",
+        "unstructured": "Kanungo A. (2023 July). The Green Dilemma: Can AI fulfil its potential without harming the environment? https://earth.org/the-green-dilemma-can-ai-fulfil-its-potential-without-harming-the-environment/."
+      },
+      {
+        "key": "e_1_3_3_28_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/23729333.2022.2150379"
+      },
+      {
+        "key": "e_1_3_3_29_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/geographies3040043"
+      },
+      {
+        "issue": "2",
+        "key": "e_1_3_3_30_1",
+        "doi-asserted-by": "crossref",
+        "DOI": "10.14763/2020.2.1469",
+        "article-title": "Transparency in artificial intelligence",
+        "volume": "9",
+        "author": "Larsson S.",
+        "year": "2020",
+        "unstructured": "Larsson, S., & Heintz, F. (2020). Transparency in artificial intelligence. Internet Policy Review, 9(2), 1\u201316. https://policyreview.info/concepts/transparency-artificial-intelligence.",
+        "journal-title": "Internet Policy Review"
+      },
+      {
+        "key": "e_1_3_3_31_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.compenvurbsys.2016.03.006"
+      },
+      {
+        "key": "e_1_3_3_32_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2312/eurova.20151104"
+      },
+      {
+        "key": "e_1_3_3_33_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/10447318.2020.1824742"
+      },
+      {
+        "key": "e_1_3_3_34_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/23729333.2023.2189431"
+      },
+      {
+        "key": "e_1_3_3_35_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1145/3615886.3627734"
+      },
+      {
+        "key": "e_1_3_3_36_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/23729333.2016.1278151"
+      },
+      {
+        "key": "e_1_3_3_37_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.iswa.2022.200151"
+      }
+    ],
+    "container-title": [
+      "International Journal of Cartography"
+    ],
+    "original-title": [],
+    "language": "en",
+    "link": [
+      {
+        "URL": "https://www.tandfonline.com/doi/pdf/10.1080/23729333.2025.2475410",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "deposited": {
+      "date-parts": [
+        [
+          2025,
+          5,
+          8
+        ]
+      ],
+      "date-time": "2025-05-08T07:13:20Z",
+      "timestamp": 1746688400000
+    },
+    "score": 1,
+    "resource": {
+      "primary": {
+        "URL": "https://www.tandfonline.com/doi/full/10.1080/23729333.2025.2475410"
+      }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+      "date-parts": [
+        [
+          2025,
+          3,
+          25
+        ]
+      ]
+    },
+    "references-count": 36,
+    "journal-issue": {
+      "issue": "2",
+      "published-print": {
+        "date-parts": [
+          [
+            2025,
+            4,
+            3
+          ]
+        ]
+      }
+    },
+    "alternative-id": [
+      "10.1080/23729333.2025.2475410"
+    ],
+    "URL": "https://doi.org/10.1080/23729333.2025.2475410",
+    "relation": {},
+    "ISSN": [
+      "2372-9333",
+      "2372-9341"
+    ],
+    "issn-type": [
+      {
+        "type": "print",
+        "value": "2372-9333"
+      },
+      {
+        "type": "electronic",
+        "value": "2372-9341"
+      }
+    ],
+    "subject": [],
+    "published": {
+      "date-parts": [
+        [
+          2025,
+          3,
+          25
+        ]
+      ]
+    },
+    "assertion": [
+      {
+        "value": "The publishing and review policy for this title is described in its Aims & Scope.",
+        "order": 1,
+        "name": "peerreview_statement",
+        "label": "Peer Review Statement"
+      },
+      {
+        "value": "http://www.tandfonline.com/action/journalInformation?show=aimsScope&journalCode=tica20",
+        "URL": "http://www.tandfonline.com/action/journalInformation?show=aimsScope&journalCode=tica20",
+        "order": 2,
+        "name": "aims_and_scope_url",
+        "label": "Aim & Scope"
+      },
+      {
+        "value": "2024-09-26",
+        "order": 0,
+        "name": "received",
+        "label": "Received",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      },
+      {
+        "value": "2025-03-01",
+        "order": 2,
+        "name": "accepted",
+        "label": "Accepted",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      },
+      {
+        "value": "2025-03-25",
+        "order": 3,
+        "name": "published",
+        "label": "Published",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      }
+    ]
+  }
+}

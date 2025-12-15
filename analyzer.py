@@ -115,175 +115,126 @@ def analyze_timeline_entities(papers, co_author_data):
     
     return groups + journals
 
-def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data=None, main_author_name=None, vector_cache=None):
+def _get_embeddings(papers, params, embedding_model, vector_cache):
     """
-    論文データを分析する。precomputed_dataがあれば一部の処理をスキップする。
-    ★ vector_cache を使用して論文ごとのベクトル化をキャッシュする
+    論文のベクトル化を行う。キャッシュを利用する。
     """
-    print("\n[analyzer] Step 1/6: Starting analysis...")
+    print("[analyzer] Step 4/6: Embedding (Vectorization)...")
     
-    # --- 1. 事前分析 (共著者、タイムライン) ---
-    print("[analyzer] Step 2/6: Analyzing co-authors...")
-    co_author_data = analyze_co_authorship(papers, main_author_name)
-    timeline_data = analyze_timeline_entities(papers, co_author_data)
+    docs, pids_with_abs, years = [], [], []
+    MIN_ABSTRACT_WORDS = params.get('min_abs_len', 50) # Use param or default to 50
+    print(f"[analyzer] Filtering with Min Abstract Length: {MIN_ABSTRACT_WORDS} characters")
 
-    if not precomputed_data:
-        precomputed_data = {}
-    if vector_cache is None:
-        vector_cache = {}
-
-    # --- 2. 次元削減キャッシュの確認 ---
-    print("[analyzer] Step 3/6: Checking dimensionality reduction (UMAP) cache...")
-    if 'reduced_10d' in precomputed_data and 'reduced_2d' in precomputed_data:
-        print("[analyzer] Using cached UMAP results (reduced_10d, reduced_2d). Skipping vectorization and UMAP.")
-        reduced_10d = precomputed_data['reduced_10d']
-        reduced_2d = precomputed_data['reduced_2d']
-        # UMAPがキャッシュされている = combined_embeddings もキャッシュされているはず
-        combined_embeddings = precomputed_data.get('combined_embeddings') 
-        # docs と pids_with_abs も必要
-        docs = precomputed_data.get('docs', [])
-        pids_with_abs = precomputed_data.get('pids_with_abs', [])
+    for pid, p in papers.items():
+        abs_text = (p.get("abstract") or "").strip()
         
-        # 必要なデータが揃っているか最終確認
-        if combined_embeddings is None or not docs or not pids_with_abs:
-             print("[analyzer] Error: UMAP cache was present but other precomputed data (embeddings/docs) was missing. Recomputing...")
-             precomputed_data = {} # キャッシュをリセットして再計算
-        
-    else:
-        print("[analyzer] No valid UMAP cache found.")
-        # --- 3. ベクトル化 (★ 論文ごとキャッシュ利用) ---
-        print("[analyzer] Step 4/6: Embedding (Vectorization)...")
-        
-        if 'combined_embeddings' in precomputed_data:
-            print("[analyzer] Using cached 'combined_embeddings' from precomputed_data.")
-            combined_embeddings = precomputed_data['combined_embeddings']
-            docs = precomputed_data.get('docs', [])
-            pids_with_abs = precomputed_data.get('pids_with_abs', [])
-            if not docs or not pids_with_abs:
-                print("[analyzer] Error: 'combined_embeddings' cache was present but docs/pids missing. Recomputing...")
-                precomputed_data = {} # リセット
-        
-        # 'combined_embeddings' が precomputed_data にない場合、論文ごとキャッシュを使って生成
-        if 'combined_embeddings' not in precomputed_data:
-            print(f"[analyzer] Generating embeddings using global vector_cache (cache size: {len(vector_cache)})...")
+        # ユーザー要望: アブストラクトが存在しないものは除外する
+        # また、タイトルへのフォールバックは行うが、長さチェックを入れる
+        if abs_text and len(abs_text) >= MIN_ABSTRACT_WORDS:
+            docs.append(abs_text)
+            pids_with_abs.append(pid)
+            years.append(p.get("year", 0))
+        else:
+            # アブストラクトがない場合、タイトルとキーワードで代用する
+            title = (p.get("title") or "").strip()
+            # タイトルのみの場合も、ある程度の長さは必要か？とりあえずそのまま通すが、
+            # min_abs_len が高い場合はタイトルだけでは弾かれるべきかもしれない。
+            # 要望は「アブストラクトが特定の文字数以下」なので、タイトルフォールバック時は
+            # 本来のアブストラクト長チェックは適用外とするか、厳密に適用するか。
+            # ここでは「アブストラクトがあれば長さチェック、なければタイトル」というロジックにする。
             
-            # 3a. 分析対象の論文リストを作成
-            docs, pids_with_abs, years = [], [], []
-            
-            # ★ 修正: 最小単語数を大幅に緩和し、タイトルによるフォールバックを実装
-            MIN_ABSTRACT_WORDS = 5
-
-            for pid, p in papers.items():
-                abs_text = (p.get("abstract") or "").strip()
-                title_text = (p.get("title") or "").strip()
+            # もし「タイトルも短すぎるものは除外」ならここも調整。
+            if title:
+                # タイトルとキーワードを組み合わせることで、情報量を増やす
+                keywords = ", ".join(p.get("keywords", []) or [])
+                fallback_text = f"{title}. {keywords}" if keywords else title
+                docs.append(fallback_text)
                 
-                text_to_use = ""
-                # アブストラクトがあり、かつ一定の長さがあればそれを使う
-                if abs_text and len(abs_text.split()) >= MIN_ABSTRACT_WORDS:
-                    text_to_use = abs_text
-                # アブストラクトがない、または短すぎる場合はタイトルを使う
-                elif title_text:
-                    text_to_use = title_text
-                
-                # テキストがあり、かつ出版年がある場合のみ分析対象にする
-                if text_to_use and p.get("year"):
-                    docs.append(text_to_use)
-                    pids_with_abs.append(pid)
-                    years.append(p["year"])
-                else:
-                    # フィルター（テキストなし、または年なし）
-                    # print(f"[analyzer] Dropping paper {pid}: No text or year.")
-                    p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
-            
-            print(f"[analyzer] Processing {len(docs)} documents out of {len(papers)} total.")
-            
-            if not docs or len(docs) < params.get('n_neighbors', 15):
-                print("[analyzer] Not enough documents for analysis. Skipping.")
-                return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "timeline_data": timeline_data}
-            
-            
-            # 3b. 論文ごとキャッシュを確認し、ベクトル化が必要なリストを作成
-            content_vectors_map = {}
-            docs_to_encode_indices = []
-            docs_to_encode_texts = []
-
-            for i, pid in enumerate(pids_with_abs):
-                if pid in vector_cache:
-                    content_vectors_map[pid] = vector_cache[pid]
-                else:
-                    docs_to_encode_indices.append(i)
-                    docs_to_encode_texts.append(docs[i])
-            
-            print(f"[analyzer] Found {len(content_vectors_map)} vectors in vector_cache.")
-            
-            # 3c. 新規論文のベクトル化
-            if docs_to_encode_texts:
-                print(f"[analyzer] Running SentenceTransformer.encode() for {len(docs_to_encode_texts)} new documents...")
-                new_vectors = embedding_model.encode(docs_to_encode_texts, show_progress_bar=True)
-                
-                # 3d. 新規ベクトルをキャッシュに保存し、マップに追加
-                for i, new_vector in enumerate(new_vectors):
-                    original_index = docs_to_encode_indices[i]
-                    pid = pids_with_abs[original_index]
-                    vector_cache[pid] = new_vector # ★ グローバルキャッシュを更新
-                    content_vectors_map[pid] = new_vector
-                print(f"[analyzer] Encoding complete. Updated vector_cache size: {len(vector_cache)}")
-            
-            # 3e. 論文ベクトルを正しい順序でNumpy配列に再構築
-            content_embeddings_list = [content_vectors_map[pid] for pid in pids_with_abs]
-            content_embeddings = np.array(content_embeddings_list)
-            
-            # 3f. 時間重み付け
-            if params.get('time_weight', 0) > 0:
-                print(f"[analyzer] Applying time_weight: {params['time_weight']}")
-                year_scaler = MinMaxScaler()
-                time_vector = year_scaler.fit_transform(np.array(years).reshape(-1, 1))
-                weighted_time_vector = time_vector * params['time_weight']
-                combined_embeddings = np.hstack([content_embeddings, weighted_time_vector])
+                pids_with_abs.append(pid)
+                years.append(p.get("year", 0))
             else:
-                combined_embeddings = content_embeddings
-            
-            # 3g. precomputed_data に保存
-            precomputed_data['docs'] = docs
-            precomputed_data['pids_with_abs'] = pids_with_abs
-            precomputed_data['combined_embeddings'] = combined_embeddings
+                 p.update({"topic": -1, "topic_keywords": "N/A", "embedding_2d": []})
+    
+    print(f"[analyzer] Processing {len(docs)} documents out of {len(papers)} total.")
+    
+    if not docs or len(docs) < params.get('n_neighbors', 15):
+        print("[analyzer] Not enough documents for analysis. Skipping.")
+        return None, None, None
 
-        # --- 4. 次元削減 (UMAP) ---
-        print(f"[analyzer] Step 5/6: Reducing dimensions with UMAP (n_neighbors={params['n_neighbors']}, min_dist={params['min_dist']})...")
+    content_vectors_map = {}
+    docs_to_encode_indices = []
+    docs_to_encode_texts = []
+
+    for i, pid in enumerate(pids_with_abs):
+        if pid in vector_cache:
+            content_vectors_map[pid] = vector_cache[pid]
+        else:
+            docs_to_encode_indices.append(i)
+            docs_to_encode_texts.append(docs[i])
+    
+    print(f"[analyzer] Found {len(content_vectors_map)} vectors in vector_cache.")
+    
+    if docs_to_encode_texts:
+        print(f"[analyzer] Running SentenceTransformer.encode() for {len(docs_to_encode_texts)} new documents...")
+        new_vectors = embedding_model.encode(docs_to_encode_texts, show_progress_bar=True)
         
-        # クラスタリング用の高次元埋め込み(10D) - パラメータ固定
-        umap_cluster_model = umap.UMAP(n_neighbors=15, n_components=10, min_dist=0.1, random_state=42)
-        reduced_10d = umap_cluster_model.fit_transform(combined_embeddings)
-            
-        # 可視化用の2D埋め込み - パラメータ可変
-        umap_viz_model = umap.UMAP(n_neighbors=params['n_neighbors'], n_components=2, min_dist=params['min_dist'], random_state=42)
-        reduced_2d = umap_viz_model.fit_transform(combined_embeddings)
+        for i, new_vector in enumerate(new_vectors):
+            original_index = docs_to_encode_indices[i]
+            pid = pids_with_abs[original_index]
+            vector_cache[pid] = new_vector
+            content_vectors_map[pid] = new_vector
+        print(f"[analyzer] Encoding complete. Updated vector_cache size: {len(vector_cache)}")
+    
+    content_embeddings_list = [content_vectors_map[pid] for pid in pids_with_abs]
+    content_embeddings = np.array(content_embeddings_list)
+    
+    if params.get('time_weight', 0) > 0:
+        print(f"[analyzer] Applying time_weight: {params['time_weight']}")
+        year_scaler = MinMaxScaler()
+        time_vector = year_scaler.fit_transform(np.array(years).reshape(-1, 1))
+        weighted_time_vector = time_vector * params['time_weight']
+        combined_embeddings = np.hstack([content_embeddings, weighted_time_vector])
+    else:
+        combined_embeddings = content_embeddings
+        
+    return combined_embeddings, docs, pids_with_abs
 
-        # 4a. precomputed_data に保存
-        precomputed_data['reduced_10d'] = reduced_10d
-        precomputed_data['reduced_2d'] = reduced_2d
+def _reduce_dimensions(combined_embeddings, params):
+    """
+    UMAPによる次元削減を行う。
+    """
+    print(f"[analyzer] Step 5/6: Reducing dimensions with UMAP (n_neighbors={params['n_neighbors']}, min_dist={params['min_dist']})...")
+    
+    # クラスタリング用の高次元埋め込み(10D)
+    umap_cluster_model = umap.UMAP(n_neighbors=15, n_components=10, min_dist=0.1, random_state=42)
+    reduced_10d = umap_cluster_model.fit_transform(combined_embeddings)
+        
+    # 可視化用の2D埋め込み
+    umap_viz_model = umap.UMAP(n_neighbors=params['n_neighbors'], n_components=2, min_dist=params['min_dist'], random_state=42)
+    reduced_2d = umap_viz_model.fit_transform(combined_embeddings)
+    
+    return reduced_10d, reduced_2d
 
-    # --- 5. クラスタリング ---
+def _cluster_papers(reduced_10d, params, docs):
+    """
+    クラスタリングを行う。
+    """
     print(f"[analyzer] Step 6/6: Clustering with {params['clustering_model']} (k={params['k']})...")
     clusterer_model = params['clustering_model'].lower()
     dendrogram_tree = None
+    topics = []
 
     if clusterer_model == 'hdbscan':
-        # ★ 修正: ユーザー指定の k を min_cluster_size として使用する
-        # 以前は HDBSCAN_flat を使用し、n_clusters=params['k'] としてクラスター数を指定していたが、
-        # UI上の「最小クラスターサイズ」の意図に合わせるため、通常の HDBSCAN を min_cluster_size 指定で使用する。
-        
         min_cluster_size = int(params['k'])
         print(f"[analyzer] Running HDBSCAN with min_cluster_size={min_cluster_size}")
 
         hdbscan_clusterer = hdbscan.HDBSCAN(
             min_cluster_size=min_cluster_size, 
-            min_samples=1, 
+            min_samples=1, # ノイズを減らすために最小サンプル数を1に設定
             gen_min_span_tree=True
         )
         topics = hdbscan_clusterer.fit_predict(reduced_10d)
         
-        # デンドログラムデータの構築
         try:
             linkage_matrix = hdbscan_clusterer.single_linkage_tree_.to_numpy()
             def build_tree(node, linkage, n_samples):
@@ -298,28 +249,27 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             dendrogram_tree = None
 
     elif clusterer_model == 'kmeans':
-        # params['k'] には、UIから指定されたk-means用のkの値が入っている
         kmeans_clusterer = KMeans(n_clusters=params['k'], random_state=42, n_init=10)
         topics = kmeans_clusterer.fit_predict(reduced_10d)
-        # K-Meansは階層的ではないため、デンドログラムは生成しない
         dendrogram_tree = None
     else: 
-        # フォールバック（本来ここには来ないはずだが、念のため min_cluster_size として扱う）
         hdbscan_clusterer = hdbscan.HDBSCAN(min_cluster_size=params['k'], min_samples=1, gen_min_span_tree=False)
         topics = hdbscan_clusterer.fit_predict(reduced_10d)
-        dendrogram_tree = None
+        # トピックが-1（未分類）の論文を新しいトピック番号に割り当てる処理を削除
+        # HDBSCANのノイズ(-1)はそのままノイズとして扱うべきであり、
+        # 無理やり一つのクラスタにまとめると分析結果が歪むため。
+        # フロントエンドは topic: -1 をグレーで表示するように実装されている。
+    
+    return topics, dendrogram_tree
 
-    # トピックが-1（未分類）の論文を新しいトピック番号に割り当てる
-    if -1 in topics:
-        max_topic_num = np.max(topics)
-        # -1しかない場合(max_topic_numが-1)は新しいトピックを0とする
-        new_topic_num = max_topic_num + 1 if max_topic_num > -1 else 0
-        topics[topics == -1] = new_topic_num
-        print(f"[analyzer] Unclassified documents (-1) assigned to new topic {new_topic_num}.")
-
+def _extract_keywords(docs, topics, stop_words):
+    """
+    キーワード抽出を行う。
+    """
     print("[analyzer] Generating topic keywords and top overall keywords...")
     documents = pd.DataFrame({"doc": docs, "topic": topics})
     
+    top_overall_keywords = []
     try:
         overall_vectorizer = TfidfVectorizer(stop_words=stop_words, ngram_range=(1, 2), max_features=50)
         overall_tfidf = overall_vectorizer.fit_transform(documents['doc'])
@@ -332,12 +282,12 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
 
     docs_per_topic = documents.groupby(['topic'], as_index=False).agg({'doc': ' '.join})
     
+    topic_keywords, all_topic_keywords = {}, {}
     try:
         topic_vectorizer = TfidfVectorizer(stop_words=stop_words, ngram_range=(1, 2))
         topic_tfidf = topic_vectorizer.fit_transform(docs_per_topic['doc'])
         topic_words = topic_vectorizer.get_feature_names_out()
         
-        topic_keywords, all_topic_keywords = {}, {}
         for i, row in docs_per_topic.iterrows():
             topic_num = row['topic']
             topic_tfidf_scores = topic_tfidf[i].toarray().flatten()
@@ -347,14 +297,106 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             top_keywords = [kw['word'] for kw in keywords_with_scores[:10]]
             topic_keywords[topic_num] = ", ".join(top_keywords)
     except ValueError:
-        topic_keywords, all_topic_keywords = {}, {}
+        pass
 
     topic_info_list = [{
         "Topic": t, "Keywords": topic_keywords.get(t, "N/A"), 
         "Count": np.count_nonzero(topics == t), "AllKeywords": all_topic_keywords.get(t, [])
     } for t in np.unique(topics)]
     topic_info = pd.DataFrame(topic_info_list).sort_values(by="Count", ascending=False)
+    
+    return topic_info, top_overall_keywords, topic_keywords
 
+def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data=None, main_author_name=None, vector_cache=None):
+    """
+    論文データを分析する。
+    """
+    print("\n[analyzer] Step 1/6: Starting analysis...")
+    
+    print("[analyzer] Step 2/6: Analyzing co-authors...")
+    co_author_data = analyze_co_authorship(papers, main_author_name)
+    timeline_data = analyze_timeline_entities(papers, co_author_data)
+
+    if not precomputed_data:
+        precomputed_data = {}
+    if vector_cache is None:
+        vector_cache = {}
+
+    print("[analyzer] Step 3/6: Checking dimensionality reduction (UMAP) cache...")
+    
+    combined_embeddings = None
+    docs = []
+    pids_with_abs = []
+    reduced_10d = None
+    reduced_2d = None
+
+    # 1. UMAPキャッシュの確認
+    if 'reduced_10d' in precomputed_data and 'reduced_2d' in precomputed_data:
+        print("[analyzer] Using cached UMAP results.")
+        reduced_10d = precomputed_data['reduced_10d']
+        reduced_2d = precomputed_data['reduced_2d']
+        combined_embeddings = precomputed_data.get('combined_embeddings')
+        docs = precomputed_data.get('docs', [])
+        pids_with_abs = precomputed_data.get('pids_with_abs', [])
+        
+        if combined_embeddings is None or not docs or not pids_with_abs:
+             print("[analyzer] Error: UMAP cache incomplete. Recomputing...")
+             precomputed_data = {}
+             reduced_10d = None # Reset to force recompute
+    else:
+        print("[analyzer] No valid UMAP cache found.")
+
+    # 2. ベクトル化 (必要な場合)
+    if reduced_10d is None:
+        if 'combined_embeddings' in precomputed_data:
+             print("[analyzer] Using cached 'combined_embeddings'.")
+             combined_embeddings = precomputed_data['combined_embeddings']
+             docs = precomputed_data.get('docs', [])
+             pids_with_abs = precomputed_data.get('pids_with_abs', [])
+             if not docs or not pids_with_abs:
+                 print("[analyzer] Error: Embeddings cache incomplete. Recomputing...")
+                 combined_embeddings, docs, pids_with_abs = _get_embeddings(papers, params, embedding_model, vector_cache)
+        else:
+             combined_embeddings, docs, pids_with_abs = _get_embeddings(papers, params, embedding_model, vector_cache)
+        
+        if combined_embeddings is None: # Not enough docs
+             return {"papers": papers, "topic_info": pd.DataFrame(), "dendrogram_data": None, "top_overall_keywords": [], "precomputed_data": {}, "co_author_data": co_author_data, "timeline_data": timeline_data}
+
+        # Cache embeddings
+        precomputed_data['docs'] = docs
+        precomputed_data['pids_with_abs'] = pids_with_abs
+        precomputed_data['combined_embeddings'] = combined_embeddings
+
+        # 3. 次元削減
+        reduced_10d, reduced_2d = _reduce_dimensions(combined_embeddings, params)
+        precomputed_data['reduced_10d'] = reduced_10d
+        precomputed_data['reduced_2d'] = reduced_2d
+
+    # 4. クラスタリング
+    topics, dendrogram_tree = _cluster_papers(reduced_10d, params, docs)
+
+    # --- Re-index topics by size (User Request) ---
+    # Topic -1 (Noise) should remain -1. Other topics should be sorted 0, 1, 2... by size.
+    unique_topics, counts = np.unique(topics, return_counts=True)
+    topic_counts = dict(zip(unique_topics, counts))
+    
+    # Sort regular topics by count (descending)
+    sorted_topics = sorted([t for t in unique_topics if t != -1], key=lambda t: topic_counts[t], reverse=True)
+    
+    # Create mapping: Old ID -> New ID
+    topic_map = {old_id: new_id for new_id, old_id in enumerate(sorted_topics)}
+    if -1 in topic_counts:
+        topic_map[-1] = -1
+        
+    # Apply mapping
+    topics = np.array([topic_map[t] for t in topics])
+    print("[analyzer] Re-indexed topics by size.")
+    # ---------------------------------------------
+
+    # 5. キーワード抽出
+    topic_info, top_overall_keywords, topic_keywords = _extract_keywords(docs, topics, stop_words)
+
+    # 結果の統合
     for i, pid in enumerate(pids_with_abs):
         topic_num = topics[i]
         papers[pid].update({
