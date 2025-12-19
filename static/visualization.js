@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const refetchAndAnalyzeButton = document.getElementById('refetchAndAnalyzeButton');
     const umapLegendContainer = document.getElementById('umap-legend-container');
     const excludeSelectedBtn = document.getElementById('exclude-selected-btn');
+    const screenshotButton = document.getElementById('screenshotButton');
     const minAbsLenInput = document.getElementById('min_abs_len');
     const legendPieContainer = document.getElementById('legend-pie-chart');
     const topicCountDisplay = document.getElementById('topicCountDisplay');
@@ -172,6 +173,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- データ取得と描画 ---
     if (refetchAndAnalyzeButton) refetchAndAnalyzeButton.addEventListener('click', () => requestAnalysisFromServer(true, false));
     if (reanalyzeButton) reanalyzeButton.addEventListener('click', () => requestAnalysisFromServer(false, true));
+
+    if (screenshotButton) {
+        screenshotButton.addEventListener('click', () => {
+            if (typeof html2canvas === 'undefined') {
+                alert('html2canvas library is not loaded.');
+                return;
+            }
+
+            // Capture the entire body with improved options
+            html2canvas(document.body, {
+                scale: 2, // Improve resolution
+                useCORS: true, // Handle cross-origin resources (like fonts)
+                logging: false, // Disable logging
+                windowWidth: document.body.scrollWidth,
+                windowHeight: document.body.scrollHeight
+            }).then(canvas => {
+                // Create a link to download the image
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                link.download = `research_analyzer_screenshot_${timestamp}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(err => {
+                console.error("Screenshot failed:", err);
+                alert("Screenshot failed: " + err);
+            });
+        });
+    }
 
     if (kmeansKInput) {
         kmeansKInput.addEventListener('change', () => {
@@ -507,7 +538,24 @@ document.addEventListener('DOMContentLoaded', () => {
         papers.forEach(paperId => {
             const paper = data.nodes.find(p => p.paper_id === paperId);
             if (paper) {
-                const paperKeywords = paper.keywords || (currentData.keyword_coords ? Object.keys(currentData.keyword_coords) : []);
+                // ★ 修正: 論文自身のキーワードに加え、所属トピックのキーワードも取得して結合する
+                let combinedKeywords = [];
+                // 1. 論文自身のキーワード
+                if (paper.keywords) {
+                    combinedKeywords = Array.isArray(paper.keywords) ? paper.keywords : [paper.keywords];
+                }
+
+                // 2. 所属トピックのキーワード
+                if (paper.topic !== undefined && paper.topic !== null) {
+                    const topicInfo = data.topic_info.find(t => t.Topic === paper.topic);
+                    if (topicInfo && topicInfo.Keywords) {
+                        const topicKws = topicInfo.Keywords.split(',').map(s => s.trim());
+                        combinedKeywords = [...combinedKeywords, ...topicKws];
+                    }
+                }
+
+                // 重複排除
+                const paperKeywords = [...new Set(combinedKeywords)];
 
                 const paperName = `論文: ${paper.title}`;
                 const payload = {
@@ -559,7 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
         $infoPanel.innerHTML = `<strong>Title:</strong> ${d.title}<br><strong>Authors:</strong> ${d.authors.map(a => {
             const count = coAuthorCounts.get(a) || 0;
             let className = 'author-tag';
-            if (top10CoAuthors.has(a)) {
+            // ★ 修正: 調査対象の著者は青くする
+            if (currentData && currentData.main_author_name === a) {
+                className += ' text-blue-600 font-bold';
+            } else if (top10CoAuthors.has(a)) {
                 className += ' highlight';
             } else if (count <= 1) {
                 className += ' faint';
@@ -583,19 +634,28 @@ document.addEventListener('DOMContentLoaded', () => {
         rerenderAll();
     }
 
-    function onAuthorClick(authorName) {
-        selectionState.papers.clear();
-        selectionState.topics.clear();
-        if (selectionState.authors.has(authorName)) {
-            selectionState.authors.clear();
+    function onAuthorClick(authorName, accumulate = false) {
+        if (!accumulate) {
+            selectionState.papers.clear();
+            selectionState.topics.clear();
+            if (selectionState.authors.has(authorName)) {
+                selectionState.authors.clear();
+            } else {
+                selectionState.authors.clear();
+                selectionState.authors.add(authorName);
+            }
         } else {
-            selectionState.authors.clear();
-            selectionState.authors.add(authorName);
+            // 累積モード (Add to Selection)
+            if (!selectionState.authors.has(authorName)) {
+                selectionState.authors.add(authorName);
+            }
+            // 既に選択されていても削除はしない (明示的に追加する意図なので)
         }
         rerenderAll();
     }
 
-    const handleAuthorGroupAdd = (authorIds) => {
+    // ★ 修正: papers (timelineData) と authorIds を受け取る
+    const handleAuthorGroupAdd = (papers, authorIds) => {
         if (!currentData || !currentData.co_author_data || !currentData.co_author_data.nodes) {
             console.warn("Cannot add author group: co_author_data is not ready.");
             return;
@@ -604,21 +664,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const coAuthorNodeMap = new Map(currentData.co_author_data.nodes.map(n => [n.id, n]));
 
         const authorDetails = authorIds
-            .map(id => coAuthorNodeMap.get(id))
-            .filter(Boolean)
-            .map(node => ({
-                id: node.id,
-                paper_count: node.paper_count,
-                start_year: node.start_year,
-                end_year: node.end_year
-            }));
+            .map(id => {
+                // その著者が関与している論文のみを抽出
+                let relatedPapers = [];
+                // ★ 修正: メイン著者の場合、グループ内の全論文が関与しているはずなので、マッチング漏れを防ぐために全論文を対象とする
+                // (ただし、Paper Modeの場合は名前が一致しないのでこのロジックはAuthor Mode用)
+                if (currentData && currentData.main_author_name === id) {
+                    relatedPapers = papers;
+                } else {
+                    relatedPapers = papers.filter(p => p.authors && p.authors.includes(id));
+                }
+
+                const count = relatedPapers.length;
+
+                let startYear = '?';
+                let endYear = '?';
+                if (count > 0) {
+                    const years = relatedPapers.map(p => p.year).filter(y => y > 0);
+                    if (years.length > 0) {
+                        startYear = Math.min(...years);
+                        endYear = Math.max(...years);
+                    }
+                }
+
+                // Globalな情報も参照したければ node から取れるが、
+                // ユーザー要望「グループ構成員の共著の年代と矛盾した情報」を避けるため、
+                // このグループに含まれる論文(timelineData)ベースで計算した値を優先する。
+                // ただし、メタ情報(論文リスト)も保持する。
+
+                return {
+                    id: id,
+                    paper_count: count,
+                    start_year: startYear,
+                    end_year: endYear,
+                    papers: relatedPapers.map(p => ({ title: p.title, year: p.year, cit_cnt: p.cit_cnt })) // メタ情報
+                };
+            });
 
         if (window.addEditorBlock) {
             window.addEditorBlock({
                 type: 'author_group',
                 name: `著者グループ (${authorIds.length}名)`,
                 details: {
-                    authors: authorDetails
+                    authors: authorDetails,
+                    timelineData: papers // ★ 論文データを渡す
                 }
             });
         }

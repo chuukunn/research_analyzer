@@ -7,52 +7,33 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     const { onNodeClick } = callbacks;
 
     const MARGIN = 60;
-    
-    // --- Check Selection ---
-    if (selectionState.topics.size !== 1) {
-        svg.selectAll("*").remove(); // 選択解除時はクリア
-        svg.property("currentTopicId", null); // 状態クリア
 
-        const message = selectionState.topics.size > 1 
-            ? "複数のトピックが選択されています。1つに絞ってください。"
-            : "引用ネットワークを表示するには、まずトピックを1つ選択してください。";
-        
-        svg.append("text")
-            .attr("x", "50%")
-            .attr("y", "50%")
-            .attr("text-anchor", "middle")
-            .style("font-size", "14px")
-            .text(message);
-        return;
-    }
-
-    const selectedTopicId = [...selectionState.topics][0];
-    const prevTopicId = svg.property("currentTopicId");
-
-    // ★ 修正点: トピックが変わっていない場合は、スタイル更新のみ行う (Update Pattern)
-    if (prevTopicId === selectedTopicId) {
-        updateNodeStyles(svg, state);
-        return; // 再シミュレーションしない
-    }
-
-    // トピックが変わったのでフルリフレッシュ
+    // Clear SVG
     svg.selectAll("*").remove();
-    svg.property("currentTopicId", selectedTopicId); // 新しいトピックIDを保存
     const gMain = svg.append("g");
 
+    // --- Filter Data ---
+    // トピックが選択されていればフィルタリング、なければ全データ表示
+    let topicNodeIds = null;
+    if (selectionState.topics.size > 0) {
+        topicNodeIds = new Set(data.nodes.filter(n => selectionState.topics.has(n.topic)).map(n => n.paper_id));
+    } else {
+        // No selection -> Show All
+        topicNodeIds = new Set(data.nodes.map(n => n.paper_id));
+    }
 
-    // --- Filter Data for the Selected Topic ---
-    const topicNodeIds = new Set(data.nodes.filter(n => n.topic === selectedTopicId).map(n => n.paper_id));
     if (topicNodeIds.size === 0) {
-        svg.append("text").attr("x", "50%").attr("y", "50%").attr("text-anchor", "middle").text("このトピックには論文がありません。");
+        svg.append("text").attr("x", "50%").attr("y", "50%").attr("text-anchor", "middle").text("表示対象の論文がありません。");
         return;
     }
-    
+
+    // Filter nodes and edges
     const nodes = data.nodes.filter(n => topicNodeIds.has(n.paper_id));
+    // リンクは「両端が(フィルタ後の)ノード集合に含まれる」場合のみ表示 = Local Citation
     const links = data.edges.filter(e => topicNodeIds.has(e.source) && topicNodeIds.has(e.target));
-    
+
     // Create copies to avoid modifying original data
-    const simNodes = nodes.map(n => ({...n, id: n.paper_id}));
+    const simNodes = nodes.map(n => ({ ...n, id: n.paper_id }));
     const nodeMap = new Map(simNodes.map(n => [n.id, n]));
     const simLinks = links.map(l => ({
         source: nodeMap.get(l.source),
@@ -64,9 +45,9 @@ function renderCitationNetwork(svg, data, state, callbacks) {
     const { width: W, height: H } = container.getBoundingClientRect();
 
     // --- Year Axis ---
-    const years = [...new Set(nodes.map(d => d.year))].sort((a,b) => a - b);
+    const years = [...new Set(nodes.map(d => d.year))].sort((a, b) => a - b);
     if (years.length === 0) return;
-    
+
     // Y軸の描画範囲（range）を3倍に
     const effectiveHeight = H > MARGIN * 2 ? H - MARGIN * 2 : 1;
     const rangeHeight = effectiveHeight * 3;
@@ -96,7 +77,7 @@ function renderCitationNetwork(svg, data, state, callbacks) {
         .force("charge", d3.forceManyBody().strength(-80))
         .force("collision", d3.forceCollide().radius(d => d.r + 2))
         .force("x", d3.forceX(W / 2).strength(0.1));
-    
+
     // シミュレーションインスタンスをSVGに保存して、後で停止できるようにする（必要であれば）
     svg.property("simulation", sim);
 
@@ -113,7 +94,7 @@ function renderCitationNetwork(svg, data, state, callbacks) {
         .attr("class", "link")
         .attr("marker-mid", "url(#mArr)")
         .attr("stroke", "#555").attr("stroke-width", 1);
-        
+
     const node = gMain.selectAll(".node").data(simNodes).enter().append("g")
         .attr("class", "node")
         .call(drag(sim))

@@ -11,6 +11,46 @@ import itertools
 import networkx as nx
 from networkx.algorithms import community
 from collections import defaultdict
+import re
+
+def analyze_citation_network(papers):
+    """
+    Construct a citation network from the local set of papers.
+    Returns nodes (papers) and edges (citations between them).
+    """
+    nodes = []
+    edges = []
+    
+    # 1. Create Nodes
+    # Using existing paper data
+    for pid, p in papers.items():
+        nodes.append({
+            "paper_id": pid,
+            "title": p.get("title", ""),
+            "year": p.get("year", 0),
+            "cit_cnt": p.get("cit_cnt", 0),
+            "topic": p.get("topic", -1), # Added by analyze_papers later, but structure is pre-filled here? 
+                                         # No, this runs inside analyze_papers, so topics will be added later.
+                                         # Wait, we need to return edges, frontend can merge them.
+            "venue": p.get("venue_name", "")
+        })
+
+    # 2. Create Edges
+    # Only if both Source and Target are in the 'papers' dict (Local Network)
+    # OpenAlex uses IDs, S2 uses IDs. 
+    # data_fetcher standardize puts references as list of IDs.
+    
+    for pid, p in papers.items():
+        refs = p.get("references", [])
+        for ref_id in refs:
+            if ref_id in papers:
+                edges.append({
+                    "source": pid,   # Source cites Target
+                    "target": ref_id
+                })
+
+    return {"nodes": nodes, "edges": edges}
+
 
 def analyze_co_authorship(papers, main_author_name):
     """共著者ネットワークを分析し、クラスタリングする"""
@@ -314,8 +354,13 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
     print("\n[analyzer] Step 1/6: Starting analysis...")
     
     print("[analyzer] Step 2/6: Analyzing co-authors...")
+    print("[analyzer] Step 2/6: Analyzing co-authors...")
     co_author_data = analyze_co_authorship(papers, main_author_name)
     timeline_data = analyze_timeline_entities(papers, co_author_data)
+
+    # Citation Algorithm
+    print("[analyzer] Analyzing citation network...")
+    citation_network = analyze_citation_network(papers)
 
     if not precomputed_data:
         precomputed_data = {}
@@ -403,11 +448,25 @@ def analyze_papers(papers, params, embedding_model, stop_words, precomputed_data
             "topic": int(topic_num), "topic_keywords": topic_keywords.get(topic_num, "N/A"),
             "embedding_2d": reduced_2d[i].tolist()
         })
+
     
+    # Update citation network nodes with topic info
+    # (Since citation_network.nodes were created before clustering)
+    # Actually, frontend uses 'papers' dict + 'citation_network.edges'? 
+    # citation-network.js uses Data.nodes which usually comes from flattened papers list.
+    # But analyze_citation_network returns 'nodes' too. 
+    # Let's ensure 'citation_network' includes topic info if we return separate nodes.
+    # Efficient way: Re-generate citation nodes or update them.
+    for node in citation_network["nodes"]:
+        pid = node["paper_id"]
+        if pid in papers and "topic" in papers[pid]:
+            node["topic"] = papers[pid]["topic"]
+            
     print("[analyzer] Analysis complete. Returning data.")
     return {
         "papers": papers, "topic_info": topic_info, "dendrogram_data": dendrogram_tree,
         "top_overall_keywords": top_overall_keywords, "precomputed_data": precomputed_data,
         "co_author_data": co_author_data,
-        "timeline_data": timeline_data
+        "timeline_data": timeline_data,
+        "citation_network": citation_network # Added
     }

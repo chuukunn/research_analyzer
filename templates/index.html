@@ -6,6 +6,7 @@
     <title>統合版：論文分析＆文章構成システム</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
@@ -338,6 +339,7 @@
                             </div>
                             <button id="refetchAndAnalyzeButton"
                                 class="self-end bg-indigo-600 text-white font-semibold py-1.5 px-3 rounded-md hover:bg-indigo-700 text-xs">論文を再取得して分析</button>
+
                         </div>
                     </div>
                 </div>
@@ -497,6 +499,14 @@
          右パネル: 文章構成システム
     ================================================================== -->
         <div id="panel-right" class="panel panel-right">
+            <button id="screenshotButton" class="absolute top-4 right-14 p-2 text-slate-500 hover:text-slate-800 z-10"
+                title="スクリーンショットを保存">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+            </button>
             <button id="collapse-editor-btn" class="absolute top-4 right-4 p-2 text-slate-500 hover:text-slate-800 z-10"
                 title="パネルを折りたたむ">
                 <svg id="collapse-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20"

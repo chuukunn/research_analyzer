@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('canvas');
     const addParagraphBtn = document.getElementById('add-paragraph-btn');
-    
+
     // --- Template Dropdown Elements ---
     const templateDropdownContainer = document.getElementById('template-dropdown-container');
     const addFolderDropdownBtn = document.getElementById('add-folder-dropdown-btn');
@@ -38,11 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = "<p class='text-xs text-slate-500 p-2'>年代分布データがありません。</p>";
             return;
         };
-        
-        const margin = {top: 10, right: 10, bottom: 20, left: 30};
+
+        const margin = { top: 10, right: 10, bottom: 20, left: 30 };
         const containerRect = container.getBoundingClientRect();
         // コンテナの高さを使用 (デフォルト100px)
-        const effectiveHeight = containerRect.height > 0 ? containerRect.height : 100; 
+        const effectiveHeight = containerRect.height > 0 ? containerRect.height : 100;
         const width = (containerRect.width || 300) - margin.left - margin.right;
         const height = effectiveHeight - margin.top - margin.bottom;
 
@@ -56,22 +56,22 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("preserveAspectRatio", "xMidYMid meet")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
-            
+
         const x = d3.scaleBand().domain(yearData.map(d => d[0])).range([0, width]).padding(0.2);
         const y = d3.scaleLinear().domain([0, d3.max(yearData, d => d[1])]).range([height, 0]);
-        
+
         svg.append("g").attr("transform", `translate(0,${height})`)
-           .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i) => !(i%5) || i === x.domain().length - 1)))
-           .selectAll("text")
-           .style("text-anchor", "end")
-           .attr("dx", "-.8em")
-           .attr("dy", ".15em")
-           .attr("transform", "rotate(-65)")
-           .style("font-size", "10px");
+            .call(d3.axisBottom(x).tickValues(x.domain().filter((d, i) => !(i % 5) || i === x.domain().length - 1)))
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-65)")
+            .style("font-size", "10px");
 
         svg.append("g").call(d3.axisLeft(y).ticks(Math.min(3, d3.max(yearData, d => d[1]))))
-           .style("font-size", "10px");
-        
+            .style("font-size", "10px");
+
         svg.selectAll(".bar")
             .data(yearData)
             .enter()
@@ -86,10 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function highlightKeywords(abstractText, keywords) {
-        if (!keywords || keywords.length === 0 || !abstractText) return abstractText;
-        const sortedKeywords = [...new Set(keywords)].sort((a, b) => b.length - a.length);
+        if (!keywords || !abstractText) return abstractText;
+        let kwList = [];
+        if (typeof keywords === 'string') {
+            kwList = keywords.split(',').map(s => s.trim());
+        } else if (Array.isArray(keywords)) {
+            kwList = keywords;
+        } else {
+            return abstractText;
+        }
+        if (kwList.length === 0) return abstractText;
+
+        const sortedKeywords = [...new Set(kwList)].sort((a, b) => b.length - a.length);
+        // \bは英単語境界。日本語などの場合はスペース区切りでないと効かない可能性があるが、英語論文前提とする。
+        // ケースインセンシティブでマッチさせ、マッチした文字列そのもの($&)を使って置換する（大文字小文字維持）
         const regex = new RegExp(`\\b(${sortedKeywords.map(kw => kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|')})\\b`, 'gi');
-        return abstractText.replace(regex, '<strong>$1</strong>');
+        return abstractText.replace(regex, '<strong class="text-indigo-700">$&</strong>');
     }
 
     // --- ★ 論文ノード用のミニ引用グラフ描画関数 ---
@@ -108,28 +120,30 @@ document.addEventListener('DOMContentLoaded', () => {
         let graphNodes = [{ ...mainNode, id: mainNode.paper_id, type: 'main' }]; // メインノード
         let graphLinks = [];
 
-        // 被引用（この論文が引用した論文）
+        // 被引用（この論文が引用した論文）: 私はSource、相手はTarget
         const referencedPapers = vizData.edges
-            .filter(e => e.target === paperId && allNodesMap.has(e.source))
-            .map(e => allNodesMap.get(e.source));
-        
+            .filter(e => e.source === paperId && allNodesMap.has(e.target))
+            .map(e => allNodesMap.get(e.target));
+
         referencedPapers.forEach(p => {
             if (!graphNodes.find(n => n.id === p.paper_id)) {
                 graphNodes.push({ ...p, id: p.paper_id, type: 'referenced' });
             }
-            graphLinks.push({ source: p.paper_id, target: paperId });
+            // 引用リンク: 私(source) -> 相手(target)
+            graphLinks.push({ source: paperId, target: p.paper_id });
         });
 
-        // 引用（この論文を引用した論文）
+        // 引用（この論文を引用した論文）: 相手はSource、私はTarget
         const citingPapers = vizData.edges
-            .filter(e => e.source === paperId && allNodesMap.has(e.target))
-            .map(e => allNodesMap.get(e.target));
+            .filter(e => e.target === paperId && allNodesMap.has(e.source))
+            .map(e => allNodesMap.get(e.source));
 
         citingPapers.forEach(p => {
             if (!graphNodes.find(n => n.id === p.paper_id)) {
                 graphNodes.push({ ...p, id: p.paper_id, type: 'citing' });
             }
-            graphLinks.push({ source: paperId, target: p.paper_id });
+            // 引用リンク: 相手(source) -> 私(target)
+            graphLinks.push({ source: p.paper_id, target: paperId });
         });
 
         if (graphNodes.length <= 1) {
@@ -210,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createBlockElement(data) {
         const component = document.createElement('div');
         component.className = 'component'; // Class for SortableJS to find
-        
+
         const detailsToSave = data.details || {};
         if (data.type === 'author' && data.stats) {
             Object.assign(detailsToSave, data.stats);
@@ -247,25 +261,49 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'author_group':
                 headerHtml = `<input type="text" class="font-semibold text-sm bg-transparent focus:bg-white focus:ring-1 focus:ring-indigo-500 rounded p-1 w-full" value="${data.name || '著者グループ'}">`;
                 const authorsList = (data.details.authors || [])
-                    .map(author => 
+                    .map(author =>
                         `<li class="text-xs text-slate-700">${author.id} (${author.paper_count}件, ${author.start_year}-${author.end_year})</li>`
                     )
                     .join('');
-                
+
                 // ★ 年代情報の表示
                 let yearInfoHtml = '';
                 if (data.details.timelineData && data.details.timelineData.length > 0) {
-                    const years = data.details.timelineData.map(p => p.year);
-                    const minYear = Math.min(...years);
-                    const maxYear = Math.max(...years);
-                    yearInfoHtml = `<p class="text-xs text-indigo-600 font-bold mt-1">活動期間: ${minYear}年 - ${maxYear}年 (共著 ${data.details.timelineData.length}件)</p>`;
+                    const years = data.details.timelineData.map(p => p.year).filter(y => y > 0);
+                    if (years.length > 0) {
+                        const minYear = Math.min(...years);
+                        const maxYear = Math.max(...years);
+                        yearInfoHtml = `<p class="text-xs text-indigo-600 font-bold mt-1">活動期間: ${minYear}年 - ${maxYear}年 (共著 ${data.details.timelineData.length}件)</p>`;
+                    } else {
+                        yearInfoHtml = `<p class="text-xs text-slate-500 mt-1">活動期間不明 (共著 ${data.details.timelineData.length}件)</p>`;
+                    }
                 }
-                
+
+                // ★ 共通キーワードの抽出と表示 (Top 10)
+                // ★ topCitedPaperHtmlの表示 (共通キーワードの代わり)
+                let topCitedPaperHtml = '';
+                if (data.details.timelineData && data.details.timelineData.length > 0) {
+                    const topPaper = data.details.timelineData.reduce((prev, current) => {
+                        return (prev.cit_cnt > current.cit_cnt) ? prev : current;
+                    });
+
+                    if (topPaper) {
+                        topCitedPaperHtml = `<div class="mt-2 mb-2 p-2 bg-indigo-50 border border-indigo-100 rounded-md">
+                            <p class="text-xs font-bold text-indigo-800 mb-1">最も引用された共著論文:</p>
+                            <p class="text-xs text-slate-700 italic">"${topPaper.title}" (${topPaper.cit_cnt} Citations)</p>
+                        </div>`;
+                    } else {
+                        topCitedPaperHtml = `<p class="text-xs text-slate-400 mt-2">共著論文なし</p>`;
+                    }
+                }
+
                 const authorGroupBody = `<div class="prose prose-sm max-w-none">
                                         <p><strong>グループ構成員 (${data.details.authors ? data.details.authors.length : 0}名):</strong></p>
                                         <ul class="list-disc list-inside h-20 overflow-y-auto">${authorsList}</ul>
                                         ${yearInfoHtml}
-                                        <div class="year-dist-chart h-16 w-full mt-2 bg-slate-100 rounded"></div>
+                                        ${topCitedPaperHtml} <!-- ★ 変更 -->
+                                        <p><strong>論文の年代分布 (全体像):</strong></p>
+                                        <div class="year-dist-chart mt-2 bg-slate-100 rounded" style="width: 100%; height: 100px;"></div>
                                         <div class="mt-2">
                                             <label class="text-xs font-medium text-slate-700">言及する論文数:</label>
                                             <select class="data-citation-amount text-xs p-1 border-slate-300 rounded-md">
@@ -280,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'author':
                 headerHtml = `<h3 class="font-semibold text-sm truncate pr-2" title="${data.name}">${data.name}</h3>`;
                 const authorStats = data.details || {};
-                
+
                 const authorBody = `<div class="prose prose-sm max-w-none">
                                         <p><strong>共著論文数:</strong> ${authorStats.coauthorCount || 0}件</p>
                                         <p><strong>最多共著トピック:</strong> ${authorStats.mostFrequentTopic || 'N/A'}</p>
@@ -293,17 +331,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                             </select>
                                         </div>
                                     </div>`;
-                
+
                 bodyHtml = `<div class="component-body p-2">${authorBody}</div><div class="component-memo p-2 border-t border-slate-200 bg-slate-50 rounded-b-md"><textarea class="prose-textarea auto-resize-textarea data-memo-input" placeholder="ここにメモを入力..."></textarea></div>`;
                 break;
             case 'topic':
                 headerHtml = `<h3 class="font-semibold text-sm truncate pr-2" title="${data.name}">${data.name}</h3>`;
-                
+
                 const keywordList = data.details.keywords ? data.details.keywords.split(', ') : [];
                 const selectedKeywords = new Set(data.details.selectedKeywords || []);
 
                 const keywordsHtml = keywordList.length > 0
-                    ? keywordList.map(k => 
+                    ? keywordList.map(k =>
                         `<span class="focus-keyword-btn inline-block cursor-pointer rounded-full px-3 py-1 text-xs font-medium mr-2 mb-2 border
                         ${selectedKeywords.has(k) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}"
                         data-keyword="${k}">
@@ -344,8 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <p><em>Authors: ${data.details.authors.join(', ')}</em> (${data.details.year})</p><hr>
                                         <p><strong>Abstract (キーワード強調):</strong></p>
                                         <div class="p-2 border bg-slate-50 rounded text-xs" style="max-height: 200px; overflow-y: auto;">${highlightedAbstract || 'アブストラクト情報がありません。'}</div>
-                                        <p class="text-xs font-medium mt-2"><strong>ローカル引用関係:</strong> ( <span style="color: #10b981;">●</span> 被引用 | <span style="color: #4f46e5;">●</span> この論文 | <span style="color: #f59e0b;">●</span> 引用 )</p>
-                                        <div class="mini-citation-graph" style="width: 100%; height: 100px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc;"></div>
+
                                     </div>`;
                 bodyHtml = `<div class="component-body p-2">${paperBody}</div><div class="component-memo p-2 border-t border-slate-200 bg-slate-50 rounded-b-md"><textarea class="prose-textarea auto-resize-textarea data-memo-input" placeholder="ここにメモを入力..."></textarea></div>`;
                 break;
@@ -361,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const chartDiv = component.querySelector('.year-dist-chart');
             // 年代分布データを作成: [[year, count], ...]
             const yearCounts = d3.rollup(data.details.timelineData, v => v.length, d => d.year);
-            const yearData = Array.from(yearCounts).sort((a,b) => a[0] - b[0]);
+            const yearData = Array.from(yearCounts).sort((a, b) => a[0] - b[0]);
             createYearDistChart(chartDiv, yearData);
         }
 
@@ -375,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sliderContainer = component.querySelector('.year-range-slider-container');
             const rangeDisplay = component.querySelector('.year-range-display');
             if (sliderContainer && data.details.yearDistribution && data.details.yearDistribution.length > 0) {
-                const years = data.details.yearDistribution.map(d => d[0]).sort((a,b)=>a-b);
+                const years = data.details.yearDistribution.map(d => d[0]).sort((a, b) => a - b);
                 const minYear = years[0];
                 const maxYear = years[years.length - 1];
                 const currentRange = data.details.selectedRange || [minYear, maxYear];
@@ -398,19 +435,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const updateDisplay = (values) => {
                     rangeDisplay.textContent = `${values[0]}年 ～ ${values[1]}年`;
                 };
-                
+
                 slider.noUiSlider.on('update', updateDisplay);
                 updateDisplay(currentRange);
             } else if (rangeDisplay) {
                 rangeDisplay.textContent = "年代データなし";
             }
-            
+
             const keywordContainer = component.querySelector('.focus-keyword-container');
             if (keywordContainer) {
                 keywordContainer.addEventListener('click', (e) => {
                     const target = e.target.closest('.focus-keyword-btn');
                     if (!target) return;
-                    
+
                     target.classList.toggle('bg-indigo-600');
                     target.classList.toggle('text-white');
                     target.classList.toggle('border-indigo-600');
@@ -420,14 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-        
-        // 論文ノードの場合、ミニ引用グラフを描画
-        if (data.type === 'paper') {
-            const miniGraphContainer = component.querySelector('.mini-citation-graph');
-            if (miniGraphContainer) {
-                renderMiniCitationGraph(miniGraphContainer, data.details.paper_id);
-            }
-        }
+
+
 
         if (data.type === 'paragraph' || data.type === 'folder') {
             const childContainer = component.querySelector('.component-children-container');
@@ -450,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // ★ 追加: グローバルスコープに公開
     window.addEditorBlock = addEditorBlock;
-    
+
     function addTemplateFolders(templateType) {
         const folderNames = TEMPLATES[templateType];
         if (!folderNames) return;
@@ -463,12 +494,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function initSortable(element) {
         new Sortable(element, { group: 'nested', animation: 150, handle: '.drag-handle', fallbackOnBody: true, swapThreshold: 0.65 });
     }
-    
+
     function parseComponent(element) {
         const data = {};
         const header = element.querySelector('.component-header');
         if (!header) return null;
-        
+
         data.type = element.dataset.blockType || 'paragraph';
         try {
             data.details = JSON.parse(element.dataset.detailsJson || '{}');
@@ -480,10 +511,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleInput = header.querySelector('input[type="text"]');
         const titleH3 = header.querySelector('h3');
         data.name = titleInput ? titleInput.value : (titleH3 ? titleH3.textContent.trim() : '無題');
-    
+
         const childContainer = element.querySelector('.component-children-container');
         const memoOrContentTextarea = element.querySelector('.data-memo-input');
-        
+
         if (memoOrContentTextarea) {
             if (data.type === 'paragraph') {
                 data.content = memoOrContentTextarea.value;
@@ -491,12 +522,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.memo = memoOrContentTextarea.value;
             }
         }
-    
+
         if (data.type === 'folder' || data.type === 'paragraph') {
             data.children = Array.from(childContainer.querySelectorAll(':scope > .component')).map(parseComponent).filter(Boolean);
         } else if (data.type === 'paper') {
             // (paper ノードは変更なし)
-        } 
+        }
         else if (data.type === 'author_group') {
             data.name = titleInput ? titleInput.value : (titleH3 ? titleH3.textContent.trim() : '著者グループ');
             const citationAmountSelect = element.querySelector('.data-citation-amount');
@@ -511,13 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedKeywordNodes = element.querySelectorAll('.focus-keyword-btn.bg-indigo-600');
             data.details.selectedKeywords = Array.from(selectedKeywordNodes).map(node => node.dataset.keyword);
             delete data.details.selectedKeyword;
-            
+
             const slider = element.querySelector('.year-range-slider-container > div');
             if (slider && slider.noUiSlider) {
                 data.details.selectedRange = slider.noUiSlider.get().map(v => parseInt(v, 10));
             }
             delete data.details.selectedYear;
-            
+
             const citationAmountSelect = element.querySelector('.data-citation-amount');
             data.details.citationAmount = citationAmountSelect ? citationAmountSelect.value : 'normal';
         } else {
@@ -525,8 +556,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return data;
     }
-    
-    window.getCanvasStructure = function() {
+
+    window.getCanvasStructure = function () {
         const canvas = document.getElementById('canvas');
         const topLevelNodes = canvas.querySelectorAll(':scope > .component');
         return Array.from(topLevelNodes).map(parseComponent).filter(Boolean);
@@ -536,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSortable(canvas);
         canvas.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; canvas.classList.add('bg-indigo-50', 'border-indigo-400', 'border-dashed', 'border-2'); });
         canvas.addEventListener('dragleave', (e) => { if (!canvas.contains(e.relatedTarget)) { canvas.classList.remove('bg-indigo-50', 'border-indigo-400', 'border-dashed', 'border-2'); } });
-        
+
         canvas.addEventListener('drop', (e) => {
             e.preventDefault();
             canvas.classList.remove('bg-indigo-50', 'border-indigo-400', 'border-dashed', 'border-2');
@@ -547,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!data || !data.type || !data.name) return;
 
                     let dropTarget = e.target;
-                    while(dropTarget && !dropTarget.classList.contains('component-children-container') && dropTarget !== canvas) {
+                    while (dropTarget && !dropTarget.classList.contains('component-children-container') && dropTarget !== canvas) {
                         dropTarget = dropTarget.parentElement;
                     }
                     if (!dropTarget || (!dropTarget.classList.contains('component-children-container') && dropTarget !== canvas)) {
@@ -562,14 +593,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     else if (dropTarget.classList.contains('component-children-container')) {
-                         if (data.type === 'paragraph' || data.type === 'folder' || data.type === 'author_group') {
-                             console.warn('パラグラフまたはフォルダー、著者グループの内部には追加できません。');
-                             return;
-                         }
+                        if (data.type === 'paragraph' || data.type === 'folder' || data.type === 'author_group') {
+                            console.warn('パラグラフまたはフォルダー、著者グループの内部には追加できません。');
+                            return;
+                        }
                     }
-                    
+
                     addEditorBlock(data, dropTarget);
-                    
+
                 } catch (error) { console.error('Failed to parse dropped data:', error); }
             }
         });
@@ -577,23 +608,23 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.addEventListener('click', async (e) => {
             const component = e.target.closest('.component');
             if (!component) return;
-            
+
             if (e.target.closest('.delete-btn')) {
                 component.remove();
                 if (canvas.querySelectorAll('.component').length === 0) {
-                     canvas.innerHTML = `<div class="text-center text-slate-400 placeholder-text"><p class="text-lg font-semibold">ここにブロックを追加</p><p>左の分析結果から知見をドラッグ＆ドロップできます</p></div>`;
+                    canvas.innerHTML = `<div class="text-center text-slate-400 placeholder-text"><p class="text-lg font-semibold">ここにブロックを追加</p><p>左の分析結果から知見をドラッグ＆ドロップできます</p></div>`;
                 }
             }
             if (e.target.closest('.toggle-collapse-btn')) {
                 const button = e.target.closest('.toggle-collapse-btn');
                 const body = component.querySelector('.component-body, .component-memo');
                 const children = component.querySelector('.component-children-container');
-                
+
                 const isCollapsed = (body && body.style.display === 'none') || (children && children.style.display === 'none');
-                
+
                 if (body) body.style.display = isCollapsed ? '' : 'none';
                 if (children) children.style.display = isCollapsed ? '' : 'none';
-                
+
                 button.innerHTML = isCollapsed ? '＋' : '－';
             }
 
@@ -610,24 +641,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const details = JSON.parse(component.dataset.detailsJson || '{}');
                     const allPapers = details.allPapersInTopic || [];
-                    
+
                     if (allPapers.length === 0) {
                         outputDiv.innerHTML = '<p class="text-red-500">概要生成の元になる論文データがありません。</p>';
                         return;
                     }
-                    
+
                     const abstracts = allPapers
                         .map(p => p.abstract)
                         .filter(Boolean)
                         .slice(0, 15)
                         .map(abs => `- ${abs}`)
                         .join('\n');
-                    
+
                     const prompt = `以下の論文アブストラクトのリストに基づき、この研究トピックの概要を、主要な貢献や発見がわかるように2〜3文の日本語で要約してください。\n\n[アブストラクトリスト]\n${abstracts}\n\n[要約]`;
 
                     if (!window.callGeminiAPI) {
-                         outputDiv.innerHTML = '<p class="text-red-500">エラー: API呼び出し関数が見つかりません。</p>';
-                         return;
+                        outputDiv.innerHTML = '<p class="text-red-500">エラー: API呼び出し関数が見つかりません。</p>';
+                        return;
                     }
                     const summaryText = await window.callGeminiAPI(prompt);
                     outputDiv.innerHTML = `<p class="text-slate-700">${summaryText.replace(/\n/g, '<br>')}</p>`;
@@ -671,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const templateTarget = e.target.closest('a[data-template-type]');
             const singleFolderTarget = e.target.closest('#add-single-folder-btn');
-            
+
             if (templateTarget) {
                 addTemplateFolders(templateTarget.dataset.templateType);
                 templateDropdownMenu.classList.add('hidden');
@@ -693,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
         collapseBtn.addEventListener('click', () => {
             const isCollapsed = panelRight.classList.toggle('collapsed');
             panelLeft.classList.toggle('expanded');
-            
+
             collapseIconOpen.classList.toggle('hidden', isCollapsed);
             collapseIconClosed.classList.toggle('hidden', !isCollapsed);
 
@@ -720,11 +751,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (node.type === 'paper') {
                     const paperId = node.details.paper_id;
                     const references = allEdges
-                        .filter(e => e.target === paperId && allNodesMap.has(e.source))
-                        .map(e => ({ id: e.source, title: allNodesMap.get(e.source).title }));
-                    const citedBy = allEdges
                         .filter(e => e.source === paperId && allNodesMap.has(e.target))
                         .map(e => ({ id: e.target, title: allNodesMap.get(e.target).title }));
+                    const citedBy = allEdges
+                        .filter(e => e.target === paperId && allNodesMap.has(e.source))
+                        .map(e => ({ id: e.source, title: allNodesMap.get(e.source).title }));
 
                     collected.papers.push({
                         id: paperId,
@@ -741,9 +772,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (node.type === 'topic') {
                     const topicPapers = node.details.allPapersInTopic || [];
                     const paperIdsInTopic = new Set();
-                    
+
                     topicPapers.forEach(topicPaper => {
-                        const matchedNode = Array.from(allNodesMap.values()).find(n => 
+                        const matchedNode = Array.from(allNodesMap.values()).find(n =>
                             n.title === topicPaper.title && n.year === topicPaper.year
                         );
                         if (matchedNode) {
@@ -766,28 +797,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         internalRelationships: internalRelationships,
                         citationAmount: node.details.citationAmount || 'normal'
                     });
-                } 
+                }
                 else if (node.type === 'author' || node.type === 'author_group') {
-                    
+
                     if (node.type === 'author_group') {
                         // --- グループの場合の処理 ---
                         // ★ 修正: timelineData (共著論文データ) を直接利用
                         const commonPapers = node.details.timelineData || [];
                         const authorIdsInGroup = (node.details.authors || []).map(a => a.id);
-                        
+
+                        // ★ 修正: メンバーが多く所属している論文を優先するようにソート
+                        // (論文の著者リストに含まれるグループメンバーの数をカウントし、降順ソート)
+                        const sortedCommonPapers = [...commonPapers].sort((a, b) => {
+                            const countA = (a.authors || []).filter(auth => authorIdsInGroup.includes(auth)).length;
+                            const countB = (b.authors || []).filter(auth => authorIdsInGroup.includes(auth)).length;
+                            if (countB !== countA) return countB - countA; // メンバー数が多い順
+                            return b.cit_cnt - a.cit_cnt; // 次に引用数
+                        });
+
                         // collected.authors にグループ情報を追加
                         collected.authors.push({
                             name: node.name,
                             isGroup: true,
                             groupMembers: authorIdsInGroup,
-                            commonPapers: commonPapers.map(p => ({
+                            commonPapers: sortedCommonPapers.map(p => ({
                                 title: p.title,
                                 year: p.year,
                                 abstract: p.abstract || "要約なし"
                             })),
                             // ★ 年代範囲の情報をメタデータとして追加
-                            period: commonPapers.length > 0 
-                                ? `${Math.min(...commonPapers.map(p=>p.year))} - ${Math.max(...commonPapers.map(p=>p.year))}`
+                            period: commonPapers.length > 0
+                                ? `${Math.min(...commonPapers.map(p => p.year))} - ${Math.max(...commonPapers.map(p => p.year))}`
                                 : "不明",
                             citationAmount: node.details.citationAmount || 'normal'
                         });
@@ -811,7 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                 }
-                
+
                 if (node.memo) {
                     collected.memos.push(node.memo);
                 }
@@ -827,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (allEdges.length > 0) {
-                collected.relationships.push(...allEdges.filter(edge => 
+                collected.relationships.push(...allEdges.filter(edge =>
                     paperIdsInNode.has(edge.source) && paperIdsInNode.has(edge.target)
                 ));
             }
@@ -848,13 +888,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const mainAuthorName = window.currentVisualizationData ? window.currentVisualizationData.main_author_name : "当該研究者";
-            
+
             let contextInfo = '';
             if (paragraphNode.type === 'paragraph' && paragraphNode.content) {
                 contextInfo += `### パラグラフの既存本文（下書き） ###\n"${paragraphNode.content}"\n`;
             }
             if (paragraphNode.type === 'folder' && paragraphNode.memo) {
-                 contextInfo += `### フォルダー全体のメモ ###\n"${paragraphNode.memo}"\n`;
+                contextInfo += `### フォルダー全体のメモ ###\n"${paragraphNode.memo}"\n`;
             }
             // ★ 追加: author_group のメモも収集
             if (paragraphNode.type === 'author_group' && paragraphNode.memo) {
@@ -890,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
 `;
                     break;
             }
-            
+
             // ★ 修正: 焦点（Focus）に関する指示を追加
             let focusPrompt = '';
             if (generationFocus === 'design') {
@@ -930,60 +970,60 @@ ${contextInfo}
 ---
 [論文ノード] (ID, タイトル, 年, 要旨, PDFリンク, 著者リスト(ポジション情報含む), この論文が引用する論文リスト, この論文を引用する論文リスト): 
 ${JSON.stringify(internalData.papers.map(p => ({
-    id: p.id, 
-    title: p.title, 
-    year: p.year, 
-    abstract: p.abstract,
-    pdf_url: p.pdf_url,
-    authorships: (p.authorships || []).map(a => ({ name: a.name, position: a.position })),
-    references: p.references.map(r => r.title),
-    citedBy: p.citedBy.map(c => c.title)
-})))}
+                id: p.id,
+                title: p.title,
+                year: p.year,
+                abstract: p.abstract,
+                pdf_url: p.pdf_url,
+                authorships: (p.authorships || []).map(a => ({ name: a.name, position: a.position })),
+                references: p.references.map(r => r.title),
+                citedBy: p.citedBy.map(c => c.title)
+            })))}
 ---
 [トピックノード] (焦点キーワード, 選択年代範囲, 言及する論文数の希望, トピック内の全論文リスト(要旨,引用数,年), トピック内の論文間引用関係):
-${JSON.stringify(internalData.topics.map(t => ({ 
-    focusKeywords: t.focusKeywords,
-    selectedRange: t.selectedRange,
-    citationAmount: t.citationAmount,
-    allPapersInTopic: t.allPapersInTopic.map(p => ({
-        title: p.title,
-        abstract: p.abstract,
-        cit_cnt: p.cit_cnt,
-        year: p.year
-    })),
-    internalRelationships: t.internalRelationships
-})))}
+${JSON.stringify(internalData.topics.map(t => ({
+                focusKeywords: t.focusKeywords,
+                selectedRange: t.selectedRange,
+                citationAmount: t.citationAmount,
+                allPapersInTopic: t.allPapersInTopic.map(p => ({
+                    title: p.title,
+                    abstract: p.abstract,
+                    cit_cnt: p.cit_cnt,
+                    year: p.year
+                })),
+                internalRelationships: t.internalRelationships
+            })))}
 ---
 [著者・著者グループノード] (名前, グループか?, 詳細):
 ${JSON.stringify(internalData.authors.map(a => {
-    if (a.isGroup) { // ★ グループの場合
-        return {
-            name: a.name,
-            isGroup: true,
-            groupMembers: a.groupMembers,
-            period: a.period, // ★ 活動期間
-            commonPapers: a.commonPapers.map(p => ({ // ★ 共通論文 (時系列)
-                title: p.title,
-                abstract: p.abstract,
-                year: p.year
-            })),
-            citationAmount: a.citationAmount
-        };
-    } else { // ★ 個別著者の場合
-        return {
-            name: a.name,
-            isGroup: false,
-            coauthorCount: a.coauthorCount,
-            mostFrequentTopic: a.mostFrequentTopic,
-            citationAmount: a.citationAmount,
-            coauthoredPapers: a.coauthoredPapers.map(p => ({
-                title: p.title,
-                abstract: p.abstract,
-                year: p.year
-            }))
-        };
-    }
-}))}
+                if (a.isGroup) { // ★ グループの場合
+                    return {
+                        name: a.name,
+                        isGroup: true,
+                        groupMembers: a.groupMembers,
+                        period: a.period, // ★ 活動期間
+                        commonPapers: a.commonPapers.map(p => ({ // ★ 共通論文 (時系列)
+                            title: p.title,
+                            abstract: p.abstract,
+                            year: p.year
+                        })),
+                        citationAmount: a.citationAmount
+                    };
+                } else { // ★ 個別著者の場合
+                    return {
+                        name: a.name,
+                        isGroup: false,
+                        coauthorCount: a.coauthorCount,
+                        mostFrequentTopic: a.mostFrequentTopic,
+                        citationAmount: a.citationAmount,
+                        coauthoredPapers: a.coauthoredPapers.map(p => ({
+                            title: p.title,
+                            abstract: p.abstract,
+                            year: p.year
+                        }))
+                    };
+                }
+            }))}
 ---
 [論文間の関係性(パラグラフ内)] (引用): 
 ${JSON.stringify(internalData.relationships)}
@@ -1009,7 +1049,7 @@ ${JSON.stringify(internalData.memos)}
 `;
             return prompt;
         }
-        
+
         /**
          * HTMLを構築する（結果配列を処理する）
          */
@@ -1031,7 +1071,7 @@ ${JSON.stringify(internalData.memos)}
                 formattedText = formattedText.replace(
                     /\[論文: "([^"]+)"(?:\s\(([^)]+)\))?\]/g,
                     (match, title, parenthesesContent) => {
-                        
+
                         let paperId = null;
                         const allNodes = window.currentVisualizationData ? window.currentVisualizationData.nodes : [];
                         let paperNode = null;
@@ -1052,13 +1092,13 @@ ${JSON.stringify(internalData.memos)}
                                 paperId = paperNode.paper_id;
                             }
                         }
-                        
+
                         // 3. それでも見つからない場合、正規化して部分一致検索（寛容なフォールバック）
                         if (!paperNode) {
                             try {
                                 const normalizedTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '');
                                 if (normalizedTitle.length > 10) { // 短すぎるタイトルでの誤爆を防ぐ
-                                    paperNode = allNodes.find(p => 
+                                    paperNode = allNodes.find(p =>
                                         p.title.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalizedTitle)
                                     );
                                     if (paperNode) {
@@ -1073,7 +1113,7 @@ ${JSON.stringify(internalData.memos)}
 
                         if (paperId && paperNode) {
                             const pdfUrl = paperNode.pdf_url;
-                            const openAlexUrl = `https://openalex.org/${paperId}`; 
+                            const openAlexUrl = `https://openalex.org/${paperId}`;
 
                             if (pdfUrl) {
                                 return `<a href="${pdfUrl}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline" title="PDFを開く">${title}</a>
@@ -1092,7 +1132,7 @@ ${JSON.stringify(internalData.memos)}
                 formattedText = formattedText.replace(/<\/ul><br \/><ul>/g, '');
 
                 html += `<div class="generated-section mb-3 pl-3 border-l-4 border-indigo-100">`;
-                
+
                 html += `<div class="prose prose-sm max-w-none text-slate-800">${formattedText}</div>`;
                 html += `</div>`;
             });
@@ -1125,18 +1165,18 @@ ${JSON.stringify(internalData.memos)}
             const generationFocus = focusSelect ? focusSelect.value : 'timeline';
 
             synthesisOutput.innerHTML = '<p class="text-slate-500">各パラグラフの文章を並列で生成し、統合しています...</p>';
-            
+
             try {
                 const generationTasks = structure
                     .filter(node => node.type === 'paragraph' || node.type === 'folder' || node.type === 'author_group') // ★ 修正
                     .map(paragraphNode => {
                         const prompt = createParagraphPrompt(paragraphNode, generationStyle, generationFocus); // ★ 修正: 引数を渡す
-                        
+
                         return window.callGeminiAPI(prompt).then(text => {
                             return { node: paragraphNode, text };
                         });
                     });
-                
+
                 const results = await Promise.all(generationTasks);
 
                 const finalHtml = buildHtml(results);
@@ -1155,12 +1195,12 @@ ${JSON.stringify(internalData.memos)}
                     });
                 });
 
-            } catch(error) {
+            } catch (error) {
                 console.error("Error during synthesis generation:", error);
                 synthesisOutput.innerHTML = `<p class="text-red-500">文章生成中にエラーが発生しました: ${error.message}</p>`;
             }
         }
-        
+
         generateSynthesisBtn.addEventListener('click', handleSynthesisGeneration);
     }
 

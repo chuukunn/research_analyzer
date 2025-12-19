@@ -170,7 +170,8 @@ def data():
     papers_tuple = cache_manager.get_cached_papers(base_key)
     if not papers_tuple:
         print(f"Fetching papers from {base_params['source']} (aid: {base_params['aid']})")
-        papers, main_author_name, error = fetch_papers(base_params['source'], base_params['aid'], base_params['max_papers'])
+        # ★ 修正: force_refetch パラメータを渡す
+        papers, main_author_name, error = fetch_papers(base_params['source'], base_params['aid'], base_params['max_papers'], force_refetch=force_refetch)
         if error:
             return jsonify({"error": str(error)}), 500
         cache_manager.set_cached_papers(base_key, (papers, main_author_name))
@@ -210,7 +211,7 @@ def data():
     # --- Format Final Data ---
     analyzed_papers = analysis_result['papers']
     paper_map = {pid: p for pid, p in analyzed_papers.items()}
-    edges = [{"source": r, "target": pid} for pid, p in paper_map.items() for r in p.get("references", []) if r in paper_map]
+    edges = [{"source": pid, "target": r} for pid, p in paper_map.items() for r in p.get("references", []) if r in paper_map]
 
     final_data = {
         "nodes": list(analyzed_papers.values()),

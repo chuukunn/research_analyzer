@@ -1,6 +1,10 @@
 import pyalex
 import requests
 import time
+import pyalex
+import requests
+import time
+import re
 
 # --- Helper Functions ---
 def _standardize_paper(source_data, source_type):
@@ -97,6 +101,7 @@ def _standardize_paper(source_data, source_type):
             "abstract": abstract_text,
             "authors": [au["name"] for au in authorships if au.get("name")],
             "authorships": authorships,
+            "keywords": p.get("fieldsOfStudy") or p.get("s2FieldsOfStudy") or [], # Added
             "references": refs,
             "cit_cnt": p.get("citationCount", 0),
             "type": "article", 
@@ -143,7 +148,70 @@ class OpenAlexFetcher(BaseFetcher):
 
             return papers, main_author_name, None
         except Exception as e:
+            return papers, main_author_name, None
+        except Exception as e:
             return None, None, str(e)
+
+    def fetch_paper(self, paper_id, max_papers):
+        """Fetch a single paper and its references/citations"""
+        pyalex.config.email = "gemini.test.2024@example.com"
+        try:
+            # Detect ID format (URL or WID)
+            pid = paper_id
+            if paper_id.startswith("https://openalex.org/"):
+                pid = paper_id.split("/")[-1]
+            
+            # Fetch the main paper
+            main_paper_work = pyalex.Works()[pid]
+            if not main_paper_work:
+                 return None, None, "Paper not found in OpenAlex."
+
+            std_main = _standardize_paper(main_paper_work, "openalex")
+            papers = {std_main["paper_id"]: std_main}
+            
+            # Main "Author" Name is actually the Paper Title + Type
+            main_info_str = f"[Paper] {std_main['title']}"
+
+            # Fetch References (limit by max_papers)
+            # references_list is a list of URLs like "https://openalex.org/W..."
+            ref_urls = main_paper_work.get("referenced_works", [])
+            
+            # OpenAlex filter uses IDs. Extract IDs.
+            # referenced_works in object usually contains URLs or IDs. 
+            # In the standardize function we assumed they are URLs.
+            # Check standardizer: [ref.split("/")[-1] for ref in w.get("referenced_works", [])]
+            # So they are URLs.
+            
+            ref_ids = [r.split("/")[-1] for r in ref_urls]
+            
+            # Fetch referenced papers (batch)
+            # Limited by max_papers roughly
+            target_ids = ref_ids[:max_papers]
+            
+            if target_ids:
+                # OpenAlex filter has length limits, need chunking? 
+                # pyalex handles some chunking but 'filter(openalex_id="...|...")' can be too long.
+                # 'filter(ids={"in": [...]})' is not directly supported by pyalex syntax easily?
+                # Using 'openalex_id' filter with pipe '|'
+                
+                # Simple Batching
+                batch_size = 50
+                for i in range(0, len(target_ids), batch_size):
+                    batch = target_ids[i:i+batch_size]
+                    batch_str = "|".join(batch)
+                    
+                    # fetch
+                    ref_works = pyalex.Works().filter(openalex_id=batch_str).get()
+                    
+                    for w in ref_works:
+                        std_ref = _standardize_paper(w, "openalex")
+                        papers[std_ref["paper_id"]] = std_ref
+
+            print(f"DEBUG: Fetched {len(papers)} papers (1 main + {len(papers)-1} refs).")
+            return papers, main_info_str, None
+
+        except Exception as e:
+            return None, None, f"OpenAlex Paper Fetch Error: {str(e)}"
 
 class SemanticScholarFetcher(BaseFetcher):
     def fetch(self, author_id, max_papers):
@@ -151,7 +219,7 @@ class SemanticScholarFetcher(BaseFetcher):
         try:
             # Endpoint: https://api.semanticscholar.org/graph/v1/author/<AUTHOR_ID>/papers
             # Fields Documentation: https://api.semanticscholar.org/graph/v1#operation/get_graph_get_author_papers
-            fields = "paperId,title,year,abstract,authors,venue,citationCount,openAccessPdf,references.paperId"
+            fields = "paperId,title,year,abstract,authors,venue,citationCount,openAccessPdf,references.paperId,fieldsOfStudy,s2FieldsOfStudy"
             url = f"https://api.semanticscholar.org/graph/v1/author/{author_id}/papers"
             
             params = {
@@ -208,14 +276,116 @@ class SemanticScholarFetcher(BaseFetcher):
         except Exception as e:
             return None, None, f"Semantic Scholar Error: {str(e)}"
 
-def fetch_papers(source, author_id, max_papers):
+    def fetch_paper(self, paper_id, max_papers):
+        """Fetch a single paper and its references from Semantic Scholar"""
+        try:
+             # Endpoint: https://api.semanticscholar.org/graph/v1/paper/<PAPER_ID>
+             # Fields: needs references
+             fields = "paperId,title,year,abstract,authors,venue,citationCount,openAccessPdf,fieldsOfStudy,s2FieldsOfStudy,references.paperId,references.title,references.year,references.abstract,references.authors,references.venue,references.citationCount,references.openAccessPdf,references.fieldsOfStudy,references.s2FieldsOfStudy"
+             
+             url = f"https://api.semanticscholar.org/graph/v1/paper/{paper_id}"
+             params = {"fields": fields, "limit": 999} # limit for references expansion? Graph API uses 'limit' for nested lists usually
+
+             response = requests.get(url, params=params)
+             if response.status_code != 200:
+                 return None, None, f"S2 Error: {response.status_code} {response.text}"
+             
+             data = response.json()
+             
+             papers = {}
+             
+             # Main Paper
+             std_main = _standardize_paper(data, "semantic_scholar")
+             papers[std_main["paper_id"]] = std_main
+             main_info_str = f"[Paper] {std_main['title']}"
+             
+             # References (Expanded in response)
+             # "references" key contains list of objects
+             if "references" in data:
+                 refs = data["references"]
+                 # Filter nulls
+                 refs = [r for r in refs if r.get("paperId")]
+                 
+                 # Apply max_papers limit
+                 refs = refs[:max_papers]
+                 
+                 for r in refs:
+                     std_ref = _standardize_paper(r, "semantic_scholar")
+                     if std_ref.get("paper_id"):
+                        papers[std_ref["paper_id"]] = std_ref
+             
+             print(f"DEBUG: S2 Paper Fetched {len(papers)} papers.")
+             return papers, main_info_str, None
+
+        except Exception as e:
+            return None, None, f"S2 Paper Fetch Error: {str(e)}"
+
+import os
+import json
+
+CACHE_DIR = "cache"
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
+
+def fetch_papers(source, id_str, max_papers, force_refetch=False):
+    # --- Cache Check ---
+    safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '_', id_str)
+    cache_path = os.path.join(CACHE_DIR, f"{source}_{safe_id}_{max_papers}.json")
+
+    if not force_refetch and os.path.exists(cache_path):
+        print(f"Loading from cache: {cache_path}")
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cached_data = json.load(f)
+                # cached_data should contain: {"papers": ..., "main_info": ...}
+                return cached_data.get("papers"), cached_data.get("main_info"), None
+        except Exception as e:
+            print(f"Cache load failed: {e}")
+
+    # --- Detection Logic ---
+    is_paper_id = False
+    
+    # OpenAlex Paper ID: Starts with 'W' followed by digits, or full URL
     if source == "openalex":
-        return OpenAlexFetcher().fetch(author_id, max_papers)
+        if re.match(r"^(https://openalex\.org/)?W\d+$", id_str):
+            is_paper_id = True
+            
+    # Semantic Scholar Paper ID: 40-char hex, or 'CorpusId:'
     elif source == "semantic_scholar":
-        return SemanticScholarFetcher().fetch(author_id, max_papers)
+        # S2 Paper ID is usually 40 chars hex.
+        if re.match(r"^[0-9a-fA-F]{40}$", id_str) or id_str.lower().startswith("corpusid:"):
+            is_paper_id = True
+
+    result_papers = None
+    result_main_info = None
+    result_error = None
+
+    if is_paper_id:
+        print(f"Detected Paper ID input: {id_str} (Source: {source})")
+        if source == "openalex":
+            result_papers, result_main_info, result_error = OpenAlexFetcher().fetch_paper(id_str, max_papers)
+        elif source == "semantic_scholar":
+            result_papers, result_main_info, result_error = SemanticScholarFetcher().fetch_paper(id_str, max_papers)
     else:
-        return None, None, f"Unknown source: {source}"
+        # Default to Author Fetch
+        if source == "openalex":
+            result_papers, result_main_info, result_error = OpenAlexFetcher().fetch(id_str, max_papers)
+        elif source == "semantic_scholar":
+            result_papers, result_main_info, result_error = SemanticScholarFetcher().fetch(id_str, max_papers)
+        else:
+            result_papers, result_main_info, result_error = None, None, f"Unknown source: {source}"
+
+    # --- Save to Cache ---
+    if result_papers and not result_error:
+        try:
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump({"papers": result_papers, "main_info": result_main_info}, f, ensure_ascii=False, indent=2)
+            print(f"Saved to cache: {cache_path}")
+        except Exception as e:
+            print(f"Cache save failed: {e}")
+
+    return result_papers, result_main_info, result_error
 
 # Backward compatibility (if needed)
 def fetch_papers_from_openalex(author_id, max_papers):
-    return fetch_papers("openalex", author_id, max_papers)
+    return fetch_papers("openalex", author_id, max_papers, force_refetch=False)
