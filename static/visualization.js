@@ -100,9 +100,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reclusterCallback = () => requestAnalysisFromServer(false, true);
 
-    const timeWeightSlider = createSlider(analysisParamsContainer, 'timeWeightSlider', 'timeWeightValue', 0, 0, 2, 0.01, v => v.toFixed(2), reclusterCallback);
     const neighborsSlider = createSlider(analysisParamsContainer, 'neighborsSlider', 'neighborsValue', 15, 2, 50, 1, v => Math.round(v), reclusterCallback);
     const minDistSlider = createSlider(analysisParamsContainer, 'minDistSlider', 'minDistValue', 0.1, 0, 1, 0.01, v => v.toFixed(2), reclusterCallback);
+
+    // Citation Network Layout Sliders
+    // Callback is rerenderAll because it affects the layout of the citation network
+    const citationVerticalGapSlider = createSlider(analysisParamsContainer, 'citationVerticalGapSlider', 'citationVerticalGapValue', 30, 10, 100, 5, v => Math.round(v), () => {
+        const activeTabId = document.querySelector('[data-tab-content].active')?.id;
+        if (activeTabId === 'citation-view') rerenderAll();
+    });
+
+    const citationHorizontalWidthSlider = createSlider(analysisParamsContainer, 'citationHorizontalWidthSlider', 'citationHorizontalWidthValue', 800, 400, 2000, 50, v => Math.round(v), () => {
+        const activeTabId = document.querySelector('[data-tab-content].active')?.id;
+        if (activeTabId === 'citation-view') rerenderAll();
+    });
 
     // --- UMAPパラメータのUI制御 ---
     const toggleUmapParams = () => {
@@ -236,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function requestAnalysisFromServer(forceRefetchPaperData = false, reclusterOnly = false) {
-        if (!timeWeightSlider || !neighborsSlider || !minDistSlider) {
+        if (!neighborsSlider || !minDistSlider) {
             $infoPanel.innerHTML = "エラー: UIコンポーネントの初期化に失敗しました。";
             return;
         }
@@ -253,8 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
             k: currentK, // 選択された値を送信
             max_papers: +document.getElementById('max_papers').value,
             min_abs_len: +minAbsLenInput.value,
+            min_abs_len: +minAbsLenInput.value,
             excluded_ids: Array.from(selectionState.excludedIds || []).join(','),
-            time_weight: +timeWeightSlider.get(),
+            time_weight: 0.0, // Default value as slider is removed
             n_neighbors: +neighborsSlider.get(),
             min_dist: +minDistSlider.get(),
             embedding_model: embeddingModelSelect.value,
@@ -623,8 +635,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         updateSelectionUI(getRenderData());
-        updateNodeStyles();
-        rerenderAll();
+
+        // ★ 修正: rerenderAll() を呼ばずにスタイル更新のみを行う (Citation Network)
+        // 他のネットワーク図もスタイル更新のみで済むならそうすべきだが、
+        // ここでは要望のあったCitation Networkに対する最適化を行う。
+        // ただし、selectionStateはグローバルなので、他タブへの影響も考慮必要。
+        // 現在アクティブなタブがCitation Viewなら updateNodeStyles だけ呼ぶ。
+        const activeTabId = document.querySelector('[data-tab-content].active')?.id;
+
+        if (activeTabId === 'citation-view') {
+            updateNodeStyles(); // これは visualization.js 内の関数
+            // updateNodeStyles関数内で citation-network.js の updateNodeStyles を呼ぶ必要があるが、
+            // 実装上は svgCitation.selectAll... で直接やっているため OK。
+        } else {
+            rerenderAll();
+        }
     }
 
     function onTopicClick(topicId) {
@@ -816,7 +841,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTemporalKeyword(container, data, state, callbacks);
                 break;
             case 'citation-view':
-                renderCitationNetwork(svgCitation, data, state, callbacks);
+                const verticalGap = citationVerticalGapSlider ? +citationVerticalGapSlider.get() : 30;
+                const horizontalWidth = citationHorizontalWidthSlider ? +citationHorizontalWidthSlider.get() : 800;
+                renderCitationNetwork(svgCitation, data, state, callbacks, verticalGap, horizontalWidth);
                 break;
             case 'coauthor-view':
                 renderCoauthorTimeline(svgCoauthor, data, state, callbacks);

@@ -86,7 +86,7 @@ function renderCollaborationTimeline(container, papers, label) {
  * @param {string|null} extraAuthorId - ★ 追加: 強制的に表示する追加の著者ID（ターゲット著者など）
  * @param {boolean} showLinkLabels - ★ 追加: リンクのラベル（論文数）を表示するかどうか
  */
-function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainAuthorName, existingForces, params, extraAuthorId = null, showLinkLabels = true) {
+function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainAuthorName, existingForces, params, extraAuthorId = null, showLinkLabels = true, showMainAuthor = true) {
     svg.selectAll("*").remove();
     const gMain = svg.append("g");
 
@@ -104,7 +104,9 @@ function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainA
     // --- データフィルタリング ---
     // 表示対象ノード：選択された著者 + 主著者 + 追加著者（ターゲット）
     const targetIds = new Set(selectedAuthorIds);
-    targetIds.add(mainAuthorName);
+    if (showMainAuthor) {
+        targetIds.add(mainAuthorName);
+    }
     if (extraAuthorId) targetIds.add(extraAuthorId);
 
     // ノードが主著者のみ（または主著者とターゲットのみ）の場合はメッセージを出すか、そのまま描画するか
@@ -114,11 +116,28 @@ function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainA
 
     const nodes = coAuthorData.nodes.filter(n => targetIds.has(n.id)).map(n => ({ ...n }));
 
-    // if (nodes.length <= 1 && selectedAuthorIds.size === 0) { ... } // Removed to always show main author
+    // ★ Main Author Node Injection ★
+    // Ensure main author is in the nodes list if not already (it shouldn't be in coAuthorData.nodes usually)
+    if (showMainAuthor) {
+        let mainNode = nodes.find(n => n.id === mainAuthorName);
+        if (!mainNode) {
+            mainNode = {
+                id: mainAuthorName,
+                paper_count: d3.max(nodes, n => n.paper_count) || 10, // Dummy count for size
+                start_year: d3.min(nodes, n => n.start_year),
+                end_year: d3.max(nodes, n => n.end_year),
+                fx: W / 2, // Fix to center initially
+                fy: H / 2
+            };
+            nodes.push(mainNode);
+        }
+    }
 
+    // Refresh map with new node
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
-    const links = coAuthorData.links
+    // Existing links
+    const existingLinks = coAuthorData.links
         .filter(l => {
             const s = typeof l.source === 'object' ? l.source.id : l.source;
             const t = typeof l.target === 'object' ? l.target.id : l.target;
@@ -129,6 +148,31 @@ function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainA
             target: nodeMap.get(typeof l.target === 'object' ? l.target.id : l.target),
             weight: l.weight
         }));
+
+    // ★ Synthetic Links to Main Author ★
+    const mainLinks = [];
+    if (showMainAuthor) {
+        nodes.forEach(n => {
+            if (n.id !== mainAuthorName) {
+                // Check if link already exists (unlikely for ego net data structure, but good safety)
+                // Actually, normally coAuthorData only has co-author <-> co-author links? 
+                // Or does it have Main <-> Co-author? 
+                // Analyzer.py usually returns co-author <-> co-author edges.
+                // So we add Main <-> Co-author here.
+                const sNode = nodeMap.get(mainAuthorName);
+                const tNode = nodeMap.get(n.id);
+                if (sNode && tNode) {
+                    mainLinks.push({
+                        source: sNode,
+                        target: tNode,
+                        weight: n.paper_count // Weight is the number of shared papers
+                    });
+                }
+            }
+        });
+    }
+
+    const links = [...existingLinks, ...mainLinks];
 
     // --- シミュレーション ---
     const sim = d3.forceSimulation(nodes)
@@ -185,9 +229,11 @@ function renderSelectedAuthorNetwork(svg, coAuthorData, selectedAuthorIds, mainA
         .attr("dy", 4)
         .attr("text-anchor", "middle")
         .attr("font-size", "10px")
-        .attr("fill", "white")
-        .style("pointer-events", "none")
-        .style("text-shadow", "1px 1px 2px black");
+        .attr("fill", "black")
+        .attr("stroke", "white")
+        .attr("stroke-width", "3px")
+        .style("paint-order", "stroke")
+        .style("pointer-events", "none");
 
     sim.on("tick", () => {
         link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
@@ -559,6 +605,22 @@ function renderCoauthorTimeline(containerDiv, data, state, callbacks) {
     countToggleLabel.appendChild(document.createTextNode("数値を表示"));
     graphHeader.appendChild(countToggleLabel);
 
+    // ★ Main Author Toggle
+    const mainToggleLabel = document.createElement('label');
+    mainToggleLabel.className = "inline-flex items-center cursor-pointer text-xs text-slate-600 ml-2";
+    const mainToggle = document.createElement('input');
+    mainToggle.type = "checkbox";
+    mainToggle.checked = true; // Default ON
+    mainToggle.className = "form-checkbox h-3 w-3 text-indigo-600 mr-1";
+    mainToggle.onchange = (e) => {
+        showMainAuthor = e.target.checked;
+        updateView();
+    };
+    mainToggleLabel.appendChild(mainToggle);
+    mainToggleLabel.appendChild(document.createTextNode("中心を含める"));
+    graphHeader.appendChild(mainToggleLabel);
+
+
     rightPanel.appendChild(graphHeader);
     // -----------------------------
 
@@ -572,6 +634,7 @@ function renderCoauthorTimeline(containerDiv, data, state, callbacks) {
     let selectedAuthorIds = new Set();
     let mutualsTargetAuthor = null; // nullなら通常モード、IDならその人とのCommonモード
     let showLinkLabels = true;
+    let showMainAuthor = true; // ★ 新規
     let sim = null;
 
     // ビュー更新関数
@@ -613,7 +676,8 @@ function renderCoauthorTimeline(containerDiv, data, state, callbacks) {
             { sim },
             {},
             mutualsTargetAuthor, // ★ 修正: ターゲット著者を明示的に渡してグラフには常に表示させる
-            showLinkLabels // ★ 新規: トグル状態を渡す
+            showLinkLabels, // ★ 新規: トグル状態を渡す
+            showMainAuthor // ★ 新規: メイン著者の表示状態
         );
         if (forces) sim = forces.sim;
     };

@@ -1,5 +1,46 @@
 {
   "papers": {
+    "W4417447681": {
+      "paper_id": "W4417447681",
+      "title": "SigTime: Learning and Visually Explaining Time Series Signatures",
+      "year": 2025,
+      "abstract": "Understanding and distinguishing temporal patterns in time series data is essential for scientific discovery decision-making. For example, biomedical research, uncovering meaningful physiological signals can improve diagnosis, risk assessment, patient outcomes. However, existing methods pattern face major challenges, including high computational complexity, limited interpretability, difficulty capturing structures. To address these gaps, we introduce a novel learning framework that jointly trains two Transformer models using complementary representations: shapelet-based representations to capture localized structures traditional feature engineering encode statistical properties. The learned shapelets serve as interpretable signatures differentiate across classification labels. Additionally, develop visual analytics system -- SigTIme with coordinated views facilitate exploration of from multiple perspectives, aiding useful insights generation. We quantitatively evaluate our on eight publicly available datasets one proprietary clinical dataset. demonstrate the effectiveness through usage scenarios along domain experts: involving public ECG other focused preterm labor analysis.",
+      "authors": [
+        "Yu-Chia Huang",
+        "Juntong Chen",
+        "Dongyu Liu",
+        "Kwan‐Liu Ma"
+      ],
+      "authorships": [
+        {
+          "name": "Yu-Chia Huang",
+          "position": "first",
+          "id": "https://openalex.org/A5111940037"
+        },
+        {
+          "name": "Juntong Chen",
+          "position": "middle",
+          "id": "https://openalex.org/A5101456697"
+        },
+        {
+          "name": "Dongyu Liu",
+          "position": "middle",
+          "id": "https://openalex.org/A5101769619"
+        },
+        {
+          "name": "Kwan‐Liu Ma",
+          "position": "last",
+          "id": "https://openalex.org/A5037161857"
+        }
+      ],
+      "references": [],
+      "cit_cnt": 0,
+      "type": "preprint",
+      "venue_name": null,
+      "institution_names": [],
+      "pdf_url": "https://arxiv.org/pdf/2512.12076",
+      "source": "openalex"
+    },
     "W4416767265": {
       "paper_id": "W4416767265",
       "title": "A Reliable Framework for Human-in-the-Loop Anomaly Detection in Time Series",
@@ -1082,6 +1123,47 @@
       "pdf_url": "https://doi.org/10.22271/veterinary.2025.v10.i10g.2676",
       "source": "openalex"
     },
+    "W4417439142": {
+      "paper_id": "W4417439142",
+      "title": "SigTime: Learning and Visually Explaining Time Series Signatures",
+      "year": 2025,
+      "abstract": "Understanding and distinguishing temporal patterns in time series data is essential for scientific discovery decisionmaking. For example, biomedical research, uncovering meaningful physiological signals can improve diagnosis, risk assessment, patient outcomes. However, existing methods pattern face major challenges, including high computational complexity, limited interpretability, difficulty capturing structures. To address these gaps, we introduce a novel learning framework that jointly trains two Transformer models using complementary representations: shapelet-based representations to capture localized structures traditional feature engineering encode statistical properties. The learned shapelets serve as interpretable signatures differentiate across classification labels. Additionally, develop visual analytics system-SigTime-with coordinated views facilitate exploration of from multiple perspectives, aiding useful insights generation. We quantitatively evaluate our on eight publicly available datasets one proprietary clinical dataset. demonstrate the effectiveness system through usage scenarios along with domain experts: involving public ECG other focused preterm labor analysis.",
+      "authors": [
+        "Yu-Chia Huang",
+        "Juntong Chen",
+        "Dongyu Liu",
+        "Kwan‐Liu Ma"
+      ],
+      "authorships": [
+        {
+          "name": "Yu-Chia Huang",
+          "position": "first",
+          "id": "https://openalex.org/A5111940037"
+        },
+        {
+          "name": "Juntong Chen",
+          "position": "middle",
+          "id": "https://openalex.org/A5101456697"
+        },
+        {
+          "name": "Dongyu Liu",
+          "position": "middle",
+          "id": "https://openalex.org/A5101769619"
+        },
+        {
+          "name": "Kwan‐Liu Ma",
+          "position": "last",
+          "id": "https://openalex.org/A5037161857"
+        }
+      ],
+      "references": [],
+      "cit_cnt": 0,
+      "type": "article",
+      "venue_name": null,
+      "institution_names": [],
+      "pdf_url": "",
+      "source": "openalex"
+    },
     "W4406266366": {
       "paper_id": "W4406266366",
       "title": "A Multi-Layout Design For Immersive Visualization of Hierarchical Network Data",
@@ -1982,8 +2064,8 @@
         "W4213456559",
         "W4382240050",
         "W6944817640",
-        "W2081181113",
-        "W160714577"
+        "W160714577",
+        "W2081181113"
       ],
       "cit_cnt": 2,
       "type": "article",
@@ -1993,7 +2075,7 @@
         "University of California, Davis",
         "University of Utah"
       ],
-      "pdf_url": "",
+      "pdf_url": "https://doi.org/10.1111/cgf.15095",
       "source": "openalex"
     },
     "W4396833735": {
@@ -4766,8 +4848,8 @@
         "W2891130433",
         "W6740934225",
         "W2751722336",
-        "W2732026016",
-        "W2187089797"
+        "W2187089797",
+        "W2732026016"
       ],
       "cit_cnt": 8,
       "type": "article",
@@ -9013,7 +9095,7 @@
         "University of California, Davis",
         "Stanford University"
       ],
-      "pdf_url": "https://doi.org/10.5220/0010207700002865",
+      "pdf_url": "http://dx.doi.org/10.5220/0010207700002865",
       "source": "openalex"
     },
     "W3116633845": {

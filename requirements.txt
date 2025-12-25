@@ -1,0 +1,12 @@
+flask
+sentence_transformers
+nltk
+pyalex
+requests
+pandas
+numpy
+scikit-learn
+umap-learn
+hdbscan
+scipy
+networkx

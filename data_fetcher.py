@@ -1,10 +1,9 @@
 import pyalex
 import requests
 import time
-import pyalex
-import requests
-import time
 import re
+import os
+import json
 
 # --- Helper Functions ---
 def _standardize_paper(source_data, source_type):
@@ -120,7 +119,7 @@ class BaseFetcher:
 class OpenAlexFetcher(BaseFetcher):
     def fetch(self, author_id, max_papers):
         """指定された著者IDの論文をOpenAlexから取得する"""
-        pyalex.config.email = "gemini.test.2024@example.com"
+        pyalex.config.email = os.environ.get("OPENALEX_EMAIL", "example@example.com")
         try:
             # Paginatorを準備
             works_pager = pyalex.Works().filter(author={"id": author_id}).sort(publication_date="desc").paginate(per_page=200, n_max=max_papers)
@@ -154,7 +153,7 @@ class OpenAlexFetcher(BaseFetcher):
 
     def fetch_paper(self, paper_id, max_papers):
         """Fetch a single paper and its references/citations"""
-        pyalex.config.email = "gemini.test.2024@example.com"
+        pyalex.config.email = os.environ.get("OPENALEX_EMAIL", "example@example.com")
         try:
             # Detect ID format (URL or WID)
             pid = paper_id
@@ -320,8 +319,6 @@ class SemanticScholarFetcher(BaseFetcher):
         except Exception as e:
             return None, None, f"S2 Paper Fetch Error: {str(e)}"
 
-import os
-import json
 
 CACHE_DIR = "cache"
 if not os.path.exists(CACHE_DIR):
@@ -330,18 +327,49 @@ if not os.path.exists(CACHE_DIR):
 def fetch_papers(source, id_str, max_papers, force_refetch=False):
     # --- Cache Check ---
     safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '_', id_str)
-    cache_path = os.path.join(CACHE_DIR, f"{source}_{safe_id}_{max_papers}.json")
+    cache_path = os.path.join(CACHE_DIR, f"{source}_{safe_id}.json")
 
-    if not force_refetch and os.path.exists(cache_path):
-        print(f"Loading from cache: {cache_path}")
+    cached_data = None
+    if os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
                 cached_data = json.load(f)
-                # cached_data should contain: {"papers": ..., "main_info": ...}
-                return cached_data.get("papers"), cached_data.get("main_info"), None
         except Exception as e:
             print(f"Cache load failed: {e}")
 
+    # Decision Logic: Use cache if available and satisfies the max_papers requirement
+    # We use cache if:
+    # 1. Cache exists
+    # 2. Cached 'max_papers_fetched' >= current 'max_papers' (OR cache size is large enough?)
+    #    User rule: "Always cache the largest... If 5000 searched, 500 not needed... return 5000 is okay."
+    #    This implies we prioritize the cache if it covers the requested range.
+    
+    should_use_cache = False
+    if cached_data:
+        # Determine the max_papers used when this cache was created
+        # Older caches might not have this field, so we default to the number of papers
+        cached_max = cached_data.get("max_papers_fetched", len(cached_data.get("papers", {})))
+        
+        # If the cached data was fetched with a limit >= what we want now, we use it.
+        # This fulfills: "If 5000 cached, and 500 requested, use 5000 cache."
+        if cached_max >= max_papers:
+            should_use_cache = True
+            print(f"Cache hit: Cached max ({cached_max}) >= Requested ({max_papers}). Using cache. (Ignoring force_refetch if set)")
+            
+        # However, if force_refetch is True, normally we would fetch.
+        # BUT User said: "Even if I press re-acquire... if cache exists, use it."
+        # This is interpreted as: "If I have a valid, large-enough cache, use it even if UI requested refetch."
+        # So we stick with `should_use_cache = True` in this case.
+
+        # What if cached_max < max_papers?
+        # We should fetch.
+    
+    if should_use_cache and cached_data:
+        return cached_data.get("papers"), cached_data.get("main_info"), None
+
+    # --- Fetch from API ---
+    print(f"Fetching from API... (Source: {source}, ID: {id_str}, Max: {max_papers})")
+    
     # --- Detection Logic ---
     is_paper_id = False
     
@@ -378,8 +406,20 @@ def fetch_papers(source, id_str, max_papers, force_refetch=False):
     # --- Save to Cache ---
     if result_papers and not result_error:
         try:
+            # We must check if the new fetch is "better" than the existing cache before overwriting?
+            # User says: "Always cache the largest... If search 5000, 500 is not needed."
+            # Logic: We only reached here if (cache didn't exist) OR (cache was smaller than max_papers).
+            # So the new fetch (fetching max_papers) should theoretically be "better" or equal to max_papers.
+            # However, if API returns few papers (e.g. 10) despite max_papers=5000.
+            # And previously we had max_papers=500 -> 10 papers.
+            # It's fine to overwrite.
+            
             with open(cache_path, "w", encoding="utf-8") as f:
-                json.dump({"papers": result_papers, "main_info": result_main_info}, f, ensure_ascii=False, indent=2)
+                json.dump({
+                    "papers": result_papers, 
+                    "main_info": result_main_info,
+                    "max_papers_fetched": max_papers # Save the limit used
+                }, f, ensure_ascii=False, indent=2)
             print(f"Saved to cache: {cache_path}")
         except Exception as e:
             print(f"Cache save failed: {e}")

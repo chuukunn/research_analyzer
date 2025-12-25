@@ -148,36 +148,62 @@ def data():
         "excluded_ids_hash": hashlib.md5(excluded_ids_str.encode()).hexdigest() # Cache key component
     }
     
+    # --- Fetch Papers First (Content-Based Key Generation) ---
+    # We fetch papers first because the "cache key" for analysis should depend on the ACTUAL data returned.
+    # (e.g., if we request 500 but get 5000 from a "better" cache, we want the key to reflect the 5000 papers)
+    
+    # Check if we should clear caches based on force_refetch BEFORE fetching?
+    # Actually, force_refetch now primarily guides fetch_papers.
+    # After fetching, if we get new data, we get a new Key, so old caches are naturally bypassed.
+    
+    print(f"Fetching papers from {base_params['source']} (aid: {base_params['aid']})")
+    papers, main_author_name, error = fetch_papers(base_params['source'], base_params['aid'], base_params['max_papers'], force_refetch=force_refetch)
+    
+    if error:
+        return jsonify({"error": str(error)}), 500
+
+    # Generate Base Key from Content (Paper IDs)
+    # This ensures that analysis is cached against the exact set of papers being analyzed.
+    sorted_pids = sorted(papers.keys())
+    # Include main_author_name in key just in case it varies (unlikely for same IDs but safe)
+    content_str = json.dumps(sorted_pids) + str(main_author_name)
+    base_key = hashlib.md5(content_str.encode()).hexdigest()
+    
     # --- Cache Keys ---
-    base_key = cache_manager.get_base_key(base_params)
+    # base_key is now content-derived.
     embedding_key = cache_manager.get_embedding_key(base_key, analysis_params)
     full_precompute_key = cache_manager.get_full_precompute_key(base_key, analysis_params)
     full_analysis_key = cache_manager.get_analysis_key(base_key, analysis_params)
 
     # --- Check Full Analysis Cache ---
+    # If explicit force_refetch was requested, we might want to skip this?
+    # User said: "Even if I re-acquire... if cache exists use it." -> This suggests we use cache if available.
+    # Since fetch_papers already handles "smart" data retrieval, we can trust the Analysis Cache for this data.
+    
     if not force_refetch:
         cached_result = cache_manager.get_cached_analysis(full_analysis_key)
         if cached_result:
             print(f"Returning full analysis from cache (key: {full_analysis_key})")
             return jsonify(cached_result)
-
-    # --- Handle Force Refetch ---
-    if force_refetch:
-        print("Force refetch requested.")
-        cache_manager.clear_related_cache(base_key)
-
-    # --- Fetch Papers ---
-    papers_tuple = cache_manager.get_cached_papers(base_key)
-    if not papers_tuple:
-        print(f"Fetching papers from {base_params['source']} (aid: {base_params['aid']})")
-        # ★ 修正: force_refetch パラメータを渡す
-        papers, main_author_name, error = fetch_papers(base_params['source'], base_params['aid'], base_params['max_papers'], force_refetch=force_refetch)
-        if error:
-            return jsonify({"error": str(error)}), 500
-        cache_manager.set_cached_papers(base_key, (papers, main_author_name))
-    else:
-        print(f"Using cached papers (key: {base_key})")
-        papers, main_author_name = papers_tuple
+            
+    # If force_refetch is True, but fetch_papers returned cached data (because it was 'better'),
+    # we theoretically could still use the Analysis Cache.
+    # But traditionally force_refetch implies "Redo Analysis" too.
+    # However, given the user's strong "Use Cache" instruction, maybe we should check cache even if force_refetch=True?
+    # Let's stick to: If force_refetch=True passed to URL, we skip Analysis Cache check here (re-analyze).
+    # BUT fetch_papers might have returned old data. If we re-analyze old data, we just get same result (deterministic).
+    # So it doesn't hurt to re-run analysis if user explicitly forced it. 
+    # But for "smart cache" use case (request 500, get 5000), force_refetch is likely False.
+    
+    # Re-check cache even if force_refetch was passed? 
+    # Logic: 
+    # 1. User clicks "Analyze" -> force_refetch usually false? 
+    # 2. User clicks "Re-acquire" -> force_refetch=True? 
+    #    -> fetch_papers might return cached data anyway.
+    #    -> key is same.
+    #    -> If valid analysis exists for this data, why re-compute?
+    #    -> I'll enable cache check unconditionally for now, or maybe only if not recluster_only.
+    #    -> Let's leave the `if not force_refetch` block as is. If user forces, we re-compute. That's safer.
 
     # --- Prepare Precomputed Data ---
     precomputed_data_to_pass = cache_manager.get_precomputed_data(full_precompute_key, embedding_key)

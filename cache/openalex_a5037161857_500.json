@@ -1,5 +1,46 @@
 {
   "papers": {
+    "W4417447681": {
+      "paper_id": "W4417447681",
+      "title": "SigTime: Learning and Visually Explaining Time Series Signatures",
+      "year": 2025,
+      "abstract": "Understanding and distinguishing temporal patterns in time series data is essential for scientific discovery decision-making. For example, biomedical research, uncovering meaningful physiological signals can improve diagnosis, risk assessment, patient outcomes. However, existing methods pattern face major challenges, including high computational complexity, limited interpretability, difficulty capturing structures. To address these gaps, we introduce a novel learning framework that jointly trains two Transformer models using complementary representations: shapelet-based representations to capture localized structures traditional feature engineering encode statistical properties. The learned shapelets serve as interpretable signatures differentiate across classification labels. Additionally, develop visual analytics system -- SigTIme with coordinated views facilitate exploration of from multiple perspectives, aiding useful insights generation. We quantitatively evaluate our on eight publicly available datasets one proprietary clinical dataset. demonstrate the effectiveness through usage scenarios along domain experts: involving public ECG other focused preterm labor analysis.",
+      "authors": [
+        "Yu-Chia Huang",
+        "Juntong Chen",
+        "Dongyu Liu",
+        "Kwan‐Liu Ma"
+      ],
+      "authorships": [
+        {
+          "name": "Yu-Chia Huang",
+          "position": "first",
+          "id": "https://openalex.org/A5111940037"
+        },
+        {
+          "name": "Juntong Chen",
+          "position": "middle",
+          "id": "https://openalex.org/A5101456697"
+        },
+        {
+          "name": "Dongyu Liu",
+          "position": "middle",
+          "id": "https://openalex.org/A5101769619"
+        },
+        {
+          "name": "Kwan‐Liu Ma",
+          "position": "last",
+          "id": "https://openalex.org/A5037161857"
+        }
+      ],
+      "references": [],
+      "cit_cnt": 0,
+      "type": "preprint",
+      "venue_name": null,
+      "institution_names": [],
+      "pdf_url": "https://arxiv.org/pdf/2512.12076",
+      "source": "openalex"
+    },
     "W4416767265": {
       "paper_id": "W4416767265",
       "title": "A Reliable Framework for Human-in-the-Loop Anomaly Detection in Time Series",
@@ -1082,6 +1123,47 @@
       "pdf_url": "https://doi.org/10.22271/veterinary.2025.v10.i10g.2676",
       "source": "openalex"
     },
+    "W4417439142": {
+      "paper_id": "W4417439142",
+      "title": "SigTime: Learning and Visually Explaining Time Series Signatures",
+      "year": 2025,
+      "abstract": "Understanding and distinguishing temporal patterns in time series data is essential for scientific discovery decisionmaking. For example, biomedical research, uncovering meaningful physiological signals can improve diagnosis, risk assessment, patient outcomes. However, existing methods pattern face major challenges, including high computational complexity, limited interpretability, difficulty capturing structures. To address these gaps, we introduce a novel learning framework that jointly trains two Transformer models using complementary representations: shapelet-based representations to capture localized structures traditional feature engineering encode statistical properties. The learned shapelets serve as interpretable signatures differentiate across classification labels. Additionally, develop visual analytics system-SigTime-with coordinated views facilitate exploration of from multiple perspectives, aiding useful insights generation. We quantitatively evaluate our on eight publicly available datasets one proprietary clinical dataset. demonstrate the effectiveness system through usage scenarios along with domain experts: involving public ECG other focused preterm labor analysis.",
+      "authors": [
+        "Yu-Chia Huang",
+        "Juntong Chen",
+        "Dongyu Liu",
+        "Kwan‐Liu Ma"
+      ],
+      "authorships": [
+        {
+          "name": "Yu-Chia Huang",
+          "position": "first",
+          "id": "https://openalex.org/A5111940037"
+        },
+        {
+          "name": "Juntong Chen",
+          "position": "middle",
+          "id": "https://openalex.org/A5101456697"
+        },
+        {
+          "name": "Dongyu Liu",
+          "position": "middle",
+          "id": "https://openalex.org/A5101769619"
+        },
+        {
+          "name": "Kwan‐Liu Ma",
+          "position": "last",
+          "id": "https://openalex.org/A5037161857"
+        }
+      ],
+      "references": [],
+      "cit_cnt": 0,
+      "type": "article",
+      "venue_name": null,
+      "institution_names": [],
+      "pdf_url": "",
+      "source": "openalex"
+    },
     "W4406266366": {
       "paper_id": "W4406266366",
       "title": "A Multi-Layout Design For Immersive Visualization of Hierarchical Network Data",
@@ -1982,8 +2064,8 @@
         "W4213456559",
         "W4382240050",
         "W6944817640",
-        "W2081181113",
-        "W160714577"
+        "W160714577",
+        "W2081181113"
       ],
       "cit_cnt": 2,
       "type": "article",
@@ -1993,7 +2075,7 @@
         "University of California, Davis",
         "University of Utah"
       ],
-      "pdf_url": "",
+      "pdf_url": "https://doi.org/10.1111/cgf.15095",
       "source": "openalex"
     },
     "W4396833735": {
@@ -4766,8 +4848,8 @@
         "W2891130433",
         "W6740934225",
         "W2751722336",
-        "W2732026016",
-        "W2187089797"
+        "W2187089797",
+        "W2732026016"
       ],
       "cit_cnt": 8,
       "type": "article",
@@ -9013,7 +9095,7 @@
         "University of California, Davis",
         "Stanford University"
       ],
-      "pdf_url": "https://doi.org/10.5220/0010207700002865",
+      "pdf_url": "http://dx.doi.org/10.5220/0010207700002865",
       "source": "openalex"
     },
     "W3116633845": {
@@ -46335,104 +46417,6 @@
       "venue_name": null,
       "institution_names": [],
       "pdf_url": "https://escholarship.org/uc/item/5mt4g23r",
-      "source": "openalex"
-    },
-    "W2963010913": {
-      "paper_id": "W2963010913",
-      "title": "RINGS: A Technique for Visualization of Large Hierarchies",
-      "year": 2002,
-      "abstract": "We present RINGS, a technique for visualizing large trees. introduce new ringed circular layout of nodes to make more efficient use limited display space. RINGS provides the user with means specify areas primary and secondary focus, is able show multiple foci without compromising understanding graph. The strength its ability area in focus contextual information than existing techniques. demonstrate effectiveness by applying it visualization Unix file directory.",
-      "authors": [
-        "Soon Tee Teoh",
-        "Kwan‐Liu Ma"
-      ],
-      "authorships": [
-        {
-          "name": "Soon Tee Teoh",
-          "position": "first",
-          "id": "https://openalex.org/A5109181732"
-        },
-        {
-          "name": "Kwan‐Liu Ma",
-          "position": "last",
-          "id": "https://openalex.org/A5037161857"
-        }
-      ],
-      "references": [],
-      "cit_cnt": 5,
-      "type": "article",
-      "venue_name": null,
-      "institution_names": [],
-      "pdf_url": "https://escholarship.org/uc/item/5384z93s",
-      "source": "openalex"
-    },
-    "W2073310221": {
-      "paper_id": "W2073310221",
-      "title": "A Parallel Volume-Rendering System using Spatially Partitioned Shear-Warp Method",
-      "year": 2002,
-      "abstract": "科学技術上の諸問題を計算機を用いて解き，結果を直感的に把握したいとの要求，あるいは高度医療におけるMRI，CT, 超音波診断装置などのデータの表示，などから大容量の３次元情報を可視化する高速かつ安価なボリュームレンダリングシステムが必要とされている．ボリュームの可視化は， 処理するデータ量が膨大であることから，高速表示には，高価なスーパコンピュータや専用ハードウエアが用いられている．本論文は，市販のPC を複数用いて構成する低価格な高速ボリュームレンダリングシステムを提案し， その性能評価を示す．このシステムの高速化は，提案の空間分割シアーワープ法（Spatially Partitioned Shear-Warp Method）法により達成する．",
-      "authors": [
-        "Masato Ogata",
-        "Shigeru Muraki",
-        "Kwan‐Liu Ma",
-        "Kagenori Kajihara",
-        "Xuezhen Liu",
-        "Kenji Koshizuka"
-      ],
-      "authorships": [
-        {
-          "name": "Masato Ogata",
-          "position": "first",
-          "id": "https://openalex.org/A5110298859"
-        },
-        {
-          "name": "Shigeru Muraki",
-          "position": "middle",
-          "id": "https://openalex.org/A5022167754"
-        },
-        {
-          "name": "Kwan‐Liu Ma",
-          "position": "middle",
-          "id": "https://openalex.org/A5037161857"
-        },
-        {
-          "name": "Kagenori Kajihara",
-          "position": "middle",
-          "id": "https://openalex.org/A5113446108"
-        },
-        {
-          "name": "Xuezhen Liu",
-          "position": "middle",
-          "id": "https://openalex.org/A5064846464"
-        },
-        {
-          "name": "Kenji Koshizuka",
-          "position": "last",
-          "id": "https://openalex.org/A5028075509"
-        }
-      ],
-      "references": [
-        "W2278560942",
-        "W2133638798",
-        "W2042104882",
-        "W2022460688",
-        "W2126521141",
-        "W2116058539",
-        "W2107002723",
-        "W2107033137",
-        "W2324926197",
-        "W2164881457",
-        "W4244659560",
-        "W2114611229",
-        "W2067089692"
-      ],
-      "cit_cnt": 1,
-      "type": "article",
-      "venue_name": null,
-      "institution_names": [
-        "National Institute of Advanced Industrial Science and Technology"
-      ],
-      "pdf_url": "https://www.jstage.jst.go.jp/article/artsci/1/1/1_1_1/_pdf",
       "source": "openalex"
     }
   },

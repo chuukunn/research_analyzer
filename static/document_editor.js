@@ -1045,7 +1045,8 @@ ${JSON.stringify(internalData.memos)}
 8.  **出力:** 指示された内容の文章（パラグラフ）のみとし、余計な前置きや見出しは含めないでください。
 9.  **★ 年代の注目:** 「構成要素」の[トピックノード]に \`selectedRange\` (例: \`[2015, 2020]\`) が指定されている場合、その年代範囲（${'${t.selectedRange[0]}'}年～${'${t.selectedRange[1]}'}年）に発表された論文（リスト内の該当する論文）に特に注目し、その時期の研究がどのような意味を持つのかを重点的に記述してください。（例：「特に2015年から2020年にかけて、[論文X]や[論文Y]が発表され、この分野の転換点となった...」）
 10. **★ 言及数の調整:** [トピックノード]および[著者・著者グループノード]には、\`citationAmount\` (言及する論文数の希望: 'low' (1-3件), 'normal' (4-5件), 'high' (6件以上)) が指定されています。その指示に従い、各ノードのデータ（\`allPapersInTopic\` や \`coauthoredPapers\`、\`commonPapers\`）から言及する論文の数を調整してください。（論文ノードは必ず言及してください）
-11. **改行:** 文章は適度に改行（空行）を入れて、読みやすくしてください。
+11. **改行:** 文章の論理的な区切りには、必ず適度な改行（空行）を入れて、視覚的に読みやすくしてください。詰まった文章は避けてください。
+12. **禁止事項:** 出力にマークダウンの太字構文（**text**）は絶対に使用しないでください。強調が必要な場合はカギ括弧「」などを用いてください。また、テキストの末尾に「（〇〇文字）」のような文字数カウントや、指示への応答などのメタデータは一切含めないでください。純粋な文章のみを出力してください。
 `;
             return prompt;
         }
@@ -1131,9 +1132,18 @@ ${JSON.stringify(internalData.memos)}
 
                 formattedText = formattedText.replace(/<\/ul><br \/><ul>/g, '');
 
-                html += `<div class="generated-section mb-3 pl-3 border-l-4 border-indigo-100">`;
+                html += `<div class="generated-section mb-3 pl-3 border-l-4 border-indigo-100 relative group">`;
 
-                html += `<div class="prose prose-sm max-w-none text-slate-800">${formattedText}</div>`;
+                // Copy Button
+                html += `
+                    <button class="absolute top-0 right-0 p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity copy-btn" title="クリップボードにコピー">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                `;
+
+                html += `<div class="prose prose-sm max-w-none text-slate-800 section-content">${formattedText}</div>`;
                 html += `</div>`;
             });
             return html;
@@ -1192,6 +1202,32 @@ ${JSON.stringify(internalData.memos)}
                             });
                             canvas.dispatchEvent(event);
                         }
+                    });
+                });
+
+                // Attach copy button listeners
+                synthesisOutput.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const section = e.target.closest('.generated-section');
+                        if (!section) return;
+                        const contentDiv = section.querySelector('.section-content');
+                        if (!contentDiv) return;
+
+                        // Use innerText to preserve line breaks but remove HTML tags
+                        const textToCopy = contentDiv.innerText;
+
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            // Feedback
+                            const btnElem = e.target.closest('button');
+                            const originalHTML = btnElem.innerHTML;
+                            btnElem.innerHTML = '<span class="text-xs font-bold text-green-600">Copied!</span>';
+                            setTimeout(() => {
+                                btnElem.innerHTML = originalHTML;
+                            }, 2000);
+                        }).catch(err => {
+                            console.error('Failed to copy mode: ', err);
+                            alert('コピーに失敗しました');
+                        });
                     });
                 });
 
