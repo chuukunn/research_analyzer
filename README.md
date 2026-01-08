@@ -26,7 +26,7 @@ OpenAlexおよびSemantic Scholarから論文データを取得し、共著ネ�
    pip install -r requirements.txt
    ```
 
-## 設定
+## 設定(任意)
 
 OpenAlex APIを使用する際、Polite Poolを利用するためにメールアドレスの設定が推奨されます。環境変数 `OPENALEX_EMAIL` を設定してください。
 
