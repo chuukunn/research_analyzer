@@ -61,7 +61,7 @@ export OPENALEX_EMAIL="your_email@example.com"
 本システムを用いた論文データの取得から分析、そして論文執筆までのワークフローを解説します。
 
 ## 0.前準備
-OpenAlex(https://openalex.org/)で調査対象の氏名を入力し、著者IDを取得します。名前で調べると候補が出て、それをクリックするとaから始まる数桁のIDが得られます。
+OpenAlex(https://openalex.org/ )で調査対象の氏名を入力し、著者IDを取得します。名前で調べると候補が出て、それをクリックするとaから始まる数桁のIDが得られます。
 注意:表記ゆれが非常に多いです。例を出すと以下の通りです。
 Kwan‐Liu Ma(a5037161857)
 Kwan-Liu Ma(a5041925521)
