@@ -17,8 +17,8 @@ OpenAlexおよびSemantic Scholarから論文データを取得し、共著ネ�
 
 1. リポジトリをクローンします。
    ```bash
-   git clone https://github.com/chuukunn/reseatch_analyzer.git
-   cd reseatch_analyzer
+   git clone https://github.com/chuukunn/research_analyzer.git
+   cd research_analyzer
    ```
 
 2. 依存パッケージをインストールします。
