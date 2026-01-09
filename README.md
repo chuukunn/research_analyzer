@@ -26,21 +26,27 @@ OpenAlexおよびSemantic Scholarから論文データを取得し、共著ネ�
    pip install -r requirements.txt
    ```
 
-## 設定(任意)
+## 設定
 
-OpenAlex APIを使用する際、Polite Poolを利用するためにメールアドレスの設定が推奨されます。環境変数 `OPENALEX_EMAIL` を設定してください。
+### 1. Google Gemini APIの設定 (必須)
+本ツールは文章生成機能に Google Gemini API を使用します。
+1. [Google AI Studio](https://aistudio.google.com/app/apikey) からAPIキーを取得してください。
+2. プロジェクトのルートディレクトリに `.env` という名前のファイルを作成し、以下のように記述してください。
 
-**Windows (PowerShell):**
-```powershell
-$env:OPENALEX_EMAIL = "your_email@example.com"
+```env
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-1.5-flash  # 任意（デフォルト: gemini-1.5-flash）
 ```
 
-**Linux/Mac:**
-```bash
-export OPENALEX_EMAIL="your_email@example.com"
+### 2. OpenAlexの設定 (推奨)
+OpenAlex APIを使用する際、Polite Poolを利用するためにメールアドレスの設定が推奨されます。
+`.env` ファイルに以下を追加するか、環境変数として設定してください。
+
+```env
+OPENALEX_EMAIL=your_email@example.com
 ```
 
-※ 設定しない場合、デフォルト値が使用されますが、パフォーマンスや制限に影響する可能性があります。
+※ 設定しない場合、パフォーマンスや制限に影響する可能性があります。
 
 ## 実行方法
 

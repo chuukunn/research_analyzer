@@ -10,6 +10,9 @@ from nltk.corpus import stopwords
 # Custom modules for data fetching and analysis
 from data_fetcher import fetch_papers
 from analyzer import analyze_papers
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
 
 # ---------------- 初期化 (Initialization) ----------------
 nltk.download("stopwords", quiet=True)
@@ -21,6 +24,14 @@ embedding_models = {
     "simcse": SentenceTransformer('princeton-nlp/sup-simcse-bert-base-uncased'),
 }
 print("SentenceTransformer model loaded.")
+
+# --- Gemini API Setup ---
+load_dotenv()
+GOOGLE_API_KEY = os.getenv('GEMINI_API_KEY')
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
+# Default model, can be overridden by env var
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
@@ -253,7 +264,35 @@ def data():
     cache_manager.set_cached_analysis(full_analysis_key, final_data)
     print(f"Stored full analysis in cache (key: {full_analysis_key})")
     
+    cache_manager.set_cached_analysis(full_analysis_key, final_data)
+    print(f"Stored full analysis in cache (key: {full_analysis_key})")
+    
     return jsonify(final_data)
+
+@app.route("/api/generate", methods=["POST"])
+def generate_content():
+    if not GOOGLE_API_KEY:
+        return jsonify({"error": "GEMINI_API_KEY is not set in the server environment."}), 500
+
+    data = request.get_json()
+    if not data or "prompt" not in data:
+        return jsonify({"error": "No prompt provided"}), 400
+
+    prompt = data["prompt"]
+
+    try:
+        model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+        response = model.generate_content(prompt)
+        
+        # テキストがブロックされている場合などのハンドリング
+        if response.text:
+            return jsonify({"text": response.text})
+        else:
+             return jsonify({"error": "No text returned from API (safety filter?)"}), 500
+
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/")
 def index():

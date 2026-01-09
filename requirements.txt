@@ -10,3 +10,5 @@ umap-learn
 hdbscan
 scipy
 networkx
+google-generativeai
+python-dotenv

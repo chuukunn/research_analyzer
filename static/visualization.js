@@ -18,40 +18,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- コンテキストとAPI呼び出しを外部に公開 ---
     window.getAnalysisContext = () => ({ selectionState, currentData });
 
-    async function callGeminiAPI(prompt, retryCount = 5, delay = 1000) {
-        const apiKey = "AIzaSyCVpxAuAx1e3cxlvy7kj2uxXbV4a_gycVA"; // Provided by the environment
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-        const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-                temperature: 0.7,
-                topP: 0.95,
-                maxOutputTokens: 8192,
-            }
-        };
+    async function callGeminiAPI(prompt, retryCount = 3, delay = 1000) {
+        const apiUrl = `/api/generate`;
 
         for (let i = 0; i < retryCount; i++) {
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ prompt: prompt })
                 });
+
                 if (response.ok) {
                     const result = await response.json();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) return text;
+                    if (result.text) return result.text;
+                    if (result.error) throw new Error(result.error);
+                } else {
+                    let errorMsg = `HTTP Error ${response.status}`;
+                    try {
+                        const errJson = await response.json();
+                        if (errJson.error) errorMsg += `: ${errJson.error}`;
+                    } catch (e) { /* ignore */ }
+                    throw new Error(errorMsg);
                 }
+
             } catch (error) {
                 console.error(`API call attempt ${i + 1} failed:`, error);
-            }
-            if (i < retryCount - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-                delay *= 2; // Exponential backoff
+                if (i < retryCount - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                } else {
+                    return `（エラー：テキストの生成に失敗しました。\n詳細: ${error.message}）`;
+                }
             }
         }
-        return "（エラー：テキストの生成に失敗しました。しばらくしてからもう一度お試しください。）";
+        return "（エラー：テキストの生成に失敗しました。）";
     }
     window.callGeminiAPI = callGeminiAPI;
 
