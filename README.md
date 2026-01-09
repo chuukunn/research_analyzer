@@ -35,7 +35,7 @@ OpenAlexおよびSemantic Scholarから論文データを取得し、共著ネ�
 
 ```env
 GEMINI_API_KEY=your_api_key_here
-GEMINI_MODEL=gemini-1.5-flash  # 任意（デフォルト: gemini-1.5-flash）
+GEMINI_MODEL=gemini-2.5-flash  # 任意（デフォルト: gemini-1.5-flash）
 ```
 
 ### 2. OpenAlexの設定 (推奨)
