@@ -1,6 +1,7 @@
 # main.py ---------------------------------------------------------------
 import json
 import hashlib
+import pickle
 from flask import Flask, jsonify, render_template, request
 from sentence_transformers import SentenceTransformer
 import nltk
@@ -40,8 +41,40 @@ class CacheManager:
     def __init__(self):
         self.paper_cache = {}
         self.analysis_cache = {}
-        self.precomputed_cache = {}
-        self.vector_cache = {} # Persistent vector cache
+        
+        # Configure persistence paths
+        self.cache_dir = "cache"
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+            
+        self.vector_cache_path = os.path.join(self.cache_dir, "vector_cache.pkl")
+        self.precomputed_cache_path = os.path.join(self.cache_dir, "precomputed_cache.pkl")
+        
+        # Load persistent caches
+        self.vector_cache = self._load_from_disk(self.vector_cache_path)
+        self.precomputed_cache = self._load_from_disk(self.precomputed_cache_path)
+
+    def _load_from_disk(self, filepath):
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "rb") as f:
+                    print(f"Loading cache from {filepath}")
+                    return pickle.load(f)
+            except Exception as e:
+                print(f"Error loading cache from {filepath}: {e}")
+                return {}
+        return {}
+
+    def _save_to_disk(self, cache_data, filepath):
+        try:
+            with open(filepath, "wb") as f:
+                pickle.dump(cache_data, f)
+            print(f"Saved cache to {filepath}")
+        except Exception as e:
+            print(f"Error saving cache to {filepath}: {e}")
+
+    def save_vector_cache(self):
+        self._save_to_disk(self.vector_cache, self.vector_cache_path)
 
     def get_base_key(self, params):
         # Adding a version suffix to invalidate previous caches due to logic change
@@ -78,6 +111,8 @@ class CacheManager:
         precomputed_keys_to_del = [k for k in self.precomputed_cache if k.startswith(base_key)]
         for k in precomputed_keys_to_del:
             self.precomputed_cache.pop(k, None)
+        if precomputed_keys_to_del:
+            self._save_to_disk(self.precomputed_cache, self.precomputed_cache_path)
             
         analysis_keys_to_del = [k for k in self.analysis_cache if k.startswith(base_key)]
         for k in analysis_keys_to_del:
@@ -122,6 +157,9 @@ class CacheManager:
             }
             self.precomputed_cache[embedding_key] = embedding_cache_data
             print(f"Stored/Updated embedding data (key: {embedding_key})")
+        
+        # Save to disk
+        self._save_to_disk(self.precomputed_cache, self.precomputed_cache_path)
 
 # Initialize Cache Manager
 cache_manager = CacheManager()
@@ -244,6 +282,9 @@ def data():
     # --- Update Caches ---
     if 'precomputed_data' in analysis_result:
         cache_manager.update_precomputed_cache(full_precompute_key, embedding_key, analysis_result['precomputed_data'])
+    
+    # Save vector cache (in case new vectors were added)
+    cache_manager.save_vector_cache()
 
     # --- Format Final Data ---
     analyzed_papers = analysis_result['papers']
