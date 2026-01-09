@@ -63,10 +63,15 @@ export OPENALEX_EMAIL="your_email@example.com"
 ## 0.前準備
 OpenAlex(https://openalex.org/ )で調査対象の氏名を入力し、著者IDを取得します。名前で調べると候補が出て、それをクリックするとaから始まる数桁のIDが得られます。
 注意:表記ゆれが非常に多いです。例を出すと以下の通りです。
+
 Kwan‐Liu Ma(a5037161857)
+
 Kwan-Liu Ma(a5041925521)
+
 Kwan‐Liu Ma(a5109229937)
+
 Kwan-Liu Ma(a5113579052)
+
 多くの場合1つだけ論文数が多いので、その人を選びましょう。
 
 ## 1. データの取得と初期化
