@@ -477,8 +477,14 @@
                             </div>
                         </div>
                         <div id="synthesis-view" data-tab-content class="tab-content p-4">
-                            <button id="generate-synthesis-btn"
-                                class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 self-start mb-4">構成から文章を生成</button>
+                            <div class="flex space-x-2 mb-4 self-start">
+                                <button id="generate-synthesis-btn"
+                                    class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">構成から文章を生成</button>
+                                <button id="copy-all-synthesis-btn"
+                                    class="bg-white border border-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-md hover:bg-slate-50">
+                                    全文コピー (分析リンク除外)
+                                </button>
+                            </div>
                             <div id="synthesis-output"
                                 class="prose prose-sm max-w-none w-full h-full overflow-y-auto bg-slate-50 p-4 rounded-md">
                                 <p class="text-slate-500">右の文章構成ツールにブロックを配置し、「構成から文章を生成」ボタンを押してください。</p>

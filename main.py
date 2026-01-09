@@ -27,10 +27,15 @@ embedding_models = {
 print("SentenceTransformer model loaded.")
 
 # --- Gemini API Setup ---
-load_dotenv()
+# --- Gemini API Setup ---
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 GOOGLE_API_KEY = os.getenv('GEMINI_API_KEY')
+
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
+    print("[main.py] GEMINI_API_KEY loaded successfully.")
+else:
+    print("[main.py] WARNING: GEMINI_API_KEY not found in environment variables or .env file.")
 # Default model, can be overridden by env var
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 

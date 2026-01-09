@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Synthesis Elements ---
     const generateSynthesisBtn = document.getElementById('generate-synthesis-btn');
+    const copyAllSynthesisBtn = document.getElementById('copy-all-synthesis-btn');
     const synthesisOutput = document.getElementById('synthesis-output');
 
     // --- Template Definitions ---
@@ -1238,6 +1239,48 @@ ${JSON.stringify(internalData.memos)}
         }
 
         generateSynthesisBtn.addEventListener('click', handleSynthesisGeneration);
+    }
+
+    if (copyAllSynthesisBtn) {
+        copyAllSynthesisBtn.addEventListener('click', () => {
+            if (!synthesisOutput) return;
+
+            // Clone to avoid modifying the visible DOM
+            const clone = synthesisOutput.cloneNode(true);
+
+            // Remove unwanted elements
+            // 1. Analysis View Links ([分析ビュー])
+            clone.querySelectorAll('.paper-link').forEach(el => el.remove());
+            // 2. Individual Copy Buttons
+            clone.querySelectorAll('.copy-btn').forEach(el => el.remove());
+            // 3. Placeholder text if present (optional, but good practice)
+            if (clone.querySelector('p.text-slate-500')) {
+                // If it's just the placeholder, don't copy anything meaningful or copy empty
+                // But if content is generated, placeholder is gone.
+            }
+
+            // Get text
+            const textToCopy = clone.innerText;
+
+            if (!textToCopy.trim()) {
+                alert('コピーするテキストがありません。');
+                return;
+            }
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = copyAllSynthesisBtn.innerText;
+                copyAllSynthesisBtn.innerText = 'コピー成功!';
+                copyAllSynthesisBtn.classList.add('text-green-600', 'border-green-600');
+
+                setTimeout(() => {
+                    copyAllSynthesisBtn.innerText = originalText;
+                    copyAllSynthesisBtn.classList.remove('text-green-600', 'border-green-600');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy all: ', err);
+                alert('コピーに失敗しました');
+            });
+        });
     }
 
     addEditorBlock({ type: 'paragraph', name: '新しいパラグラフ' });
